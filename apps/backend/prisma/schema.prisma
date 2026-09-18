@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  ANALYST
+  VIEWER
+}
+
+enum InvoiceStatus {
+  QUEUED
+  PROCESSING
+  PROCESSED
+  ERROR
+}
+
+enum AuditAction {
+  LOGIN
+  USER_CREATE
+  USER_UPDATE
+  UPLOAD
+  EDIT
+  DELETE
+}
+
+model User {
+  id           String     @id @default(cuid())
+  name         String
+  email        String     @unique
+  passwordHash String
+  role         UserRole   @default(VIEWER)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  audits       AuditLog[]
+  invoices     Invoice[]
+}
+
+model AuditLog {
+  id        String      @id @default(cuid())
+  action    AuditAction
+  entity    String
+  entityId  String?
+  ipAddress String?
+  metadata  Json?
+  createdAt DateTime    @default(now())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Invoice {
+  id                   String         @id @default(cuid())
+  code                 String         @unique
+  supplier             String
+  taxId                String
+  issueDate            DateTime
+  subtotal             Float
+  vat                  Float
+  total                Float
+  status               InvoiceStatus  @default(QUEUED)
+  fileName             String
+  filePath             String
+  mimeType             String
+  uploadedAt           DateTime       @default(now())
+  storageProvider      String         @default("SIMULATED_S3")
+  ocrAverageConfidence Float          @default(0)
+  ownerId              String
+  owner                User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  fields               InvoiceField[]
+}
+
+model InvoiceField {
+  id         String   @id @default(cuid())
+  label      String
+  value      String
+  confidence Float
+  invoiceId  String
+  invoice    Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+}
+

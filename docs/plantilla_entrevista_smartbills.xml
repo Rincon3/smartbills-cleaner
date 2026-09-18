@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interviewStudy project="SmartBills Cleaner" version="1.0" language="es">
+  <metadata>
+    <purpose>Investigacion de usuarios para gestion y consulta de facturas digitales</purpose>
+    <method>Entrevista semiestructurada con apoyo de escala cuantitativa</method>
+    <recommendedParticipants>4</recommendedParticipants>
+  </metadata>
+
+  <participant id="P01">
+    <profile>
+      <date>2026-05-23</date>
+      <alias></alias>
+      <age></age>
+      <occupation></occupation>
+      <digitalExperience>Bajo</digitalExperience>
+      <invoiceManagementFrequency>Ocasional</invoiceManagementFrequency>
+      <userType>Novato</userType>
+      <channel>Virtual</channel>
+      <consent>Si</consent>
+    </profile>
+
+    <responses>
+      <response id="R001">
+        <questionCode>C1</questionCode>
+        <dimension>Contexto</dimension>
+        <responseType>abierta</responseType>
+        <questionText>Como gestionas actualmente tus facturas o documentos similares?</questionText>
+        <numericValue></numericValue>
+        <textResponse></textResponse>
+        <painPoint>Si</painPoint>
+        <featureRequest>No</featureRequest>
+        <quoteRelevant>Si</quoteRelevant>
+        <priority>Alta</priority>
+        <notes></notes>
+      </response>
+
+      <response id="R002">
+        <questionCode>U1</questionCode>
+        <dimension>Utilidad</dimension>
+        <responseType>likert_1_5</responseType>
+        <questionText>Que tan util te parece una aplicacion como SmartBills Cleaner?</questionText>
+        <numericValue>4</numericValue>
+        <textResponse></textResponse>
+        <painPoint>No</painPoint>
+        <featureRequest>Si</featureRequest>
+        <quoteRelevant>No</quoteRelevant>
+        <priority>Media</priority>
+        <notes></notes>
+      </response>
+    </responses>
+
+    <evaluation>
+      <usefulness>4</usefulness>
+      <easeOfUse>5</easeOfUse>
+      <validationConfidence>4</validationConfidence>
+      <naturalLanguageValue>3</naturalLanguageValue>
+      <interfaceClarity>4</interfaceClarity>
+      <generalAverage>4.0</generalAverage>
+      <prototypeWillingness>Si</prototypeWillingness>
+      <perceivedRisk>Medio</perceivedRisk>
+      <finalComment></finalComment>
+    </evaluation>
+
+    <affinityNotes>
+      <finding id="F001" theme="Usabilidad" subtheme="Carga cognitiva" type="problema" impact="Alto">
+        <description></description>
+        <quote></quote>
+        <suggestedAction></suggestedAction>
+      </finding>
+    </affinityNotes>
+  </participant>
+
+  <catalog>
+    <question code="C1" dimension="Contexto" type="abierta">Gestion actual de facturas</question>
+    <question code="C4" dimension="Problemas" type="abierta">Dificultades para organizar o recuperar</question>
+    <question code="N1" dimension="Necesidades" type="abierta">Expectativas del sistema</question>
+    <question code="S1" dimension="Seguridad" type="abierta">Temores o dudas sobre uso del sistema</question>
+    <question code="U1" dimension="Utilidad" type="likert_1_5">Utilidad percibida del sistema</question>
+    <question code="U2" dimension="Usabilidad" type="likert_1_5">Facilidad de uso esperada</question>
+    <question code="U3" dimension="Confianza" type="likert_1_5">Confianza al corregir datos</question>
+    <question code="U4" dimension="Valor" type="likert_1_5">Valor de consultas en lenguaje natural</question>
+    <question code="U5" dimension="Claridad" type="likert_1_5">Claridad percibida de la interfaz</question>
+  </catalog>
+</interviewStudy>

@@ -1,0 +1,14 @@
+node_modules
+.DS_Store
+.env
+.env.*
+!.env.example
+dist
+coverage
+apps/backend/uploads/*
+!apps/backend/uploads/.gitkeep
+apps/backend/generated
+apps/backend/prisma/dev.db
+apps/backend/prisma/dev.db-journal
+*.log
+

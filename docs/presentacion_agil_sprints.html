@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Presentación Ágil - SmartBills Cleaner</title>
+    <style>
+      :root {
+        --bg: #f4f7f5;
+        --paper: #ffffff;
+        --ink: #16322f;
+        --muted: #56706c;
+        --line: #d5e2df;
+        --primary: #0f8b7d;
+        --primary-soft: #dff5f1;
+        --secondary: #1d5d9b;
+        --secondary-soft: #e4eef9;
+        --accent: #f59f00;
+        --accent-soft: #fff3d6;
+        --danger-soft: #fdeaea;
+        --success-soft: #e7f8eb;
+        --shadow: 0 18px 45px rgba(22, 50, 47, 0.1);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at top left, rgba(15, 139, 125, 0.08), transparent 28%),
+          linear-gradient(180deg, #f9fbfa 0%, var(--bg) 100%);
+      }
+
+      .shell {
+        width: min(1180px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 28px 0 56px;
+      }
+
+      .hero,
+      .slide {
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 28px;
+        box-shadow: var(--shadow);
+      }
+
+      .hero {
+        padding: 42px;
+        margin-bottom: 22px;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .hero::after {
+        content: "";
+        position: absolute;
+        right: -80px;
+        top: -80px;
+        width: 260px;
+        height: 260px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(15, 139, 125, 0.18), transparent 70%);
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        border-radius: 999px;
+        background: var(--primary-soft);
+        color: var(--primary);
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        font-size: 0.76rem;
+      }
+
+      h1,
+      h2,
+      h3 {
+        margin: 0;
+      }
+
+      h1 {
+        font-size: clamp(2.2rem, 4vw, 4rem);
+        line-height: 1.02;
+        margin-top: 18px;
+        max-width: 760px;
+      }
+
+      .hero p {
+        max-width: 760px;
+        font-size: 1.05rem;
+        line-height: 1.7;
+        color: var(--muted);
+        margin: 18px 0 0;
+      }
+
+      .hero-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+        margin-top: 26px;
+        position: relative;
+        z-index: 1;
+      }
+
+      .metric {
+        padding: 18px 20px;
+        border-radius: 20px;
+        border: 1px solid var(--line);
+        background: #fbfdfc;
+      }
+
+      .metric strong {
+        display: block;
+        font-size: 1.55rem;
+        margin-bottom: 8px;
+      }
+
+      .metric span {
+        color: var(--muted);
+        font-size: 0.94rem;
+      }
+
+      .toc {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin: 0 0 22px;
+      }
+
+      .toc a {
+        text-decoration: none;
+        color: var(--secondary);
+        border: 1px solid #cfe0f4;
+        background: var(--secondary-soft);
+        border-radius: 999px;
+        padding: 10px 14px;
+        font-weight: 600;
+        font-size: 0.92rem;
+      }
+
+      .slide {
+        padding: 30px;
+        margin-bottom: 20px;
+      }
+
+      .slide-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 20px;
+      }
+
+      .slide-title {
+        font-size: clamp(1.4rem, 2vw, 2rem);
+      }
+
+      .slide-note {
+        font-size: 0.92rem;
+        color: var(--muted);
+        background: #f7faf9;
+        border: 1px solid var(--line);
+        padding: 10px 14px;
+        border-radius: 14px;
+      }
+
+      .grid-2,
+      .grid-3 {
+        display: grid;
+        gap: 16px;
+      }
+
+      .grid-2 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .grid-3 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .card {
+        padding: 20px;
+        border-radius: 20px;
+        border: 1px solid var(--line);
+        background: #fbfdfd;
+      }
+
+      .card h3 {
+        font-size: 1.05rem;
+        margin-bottom: 10px;
+      }
+
+      .card p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.65;
+      }
+
+      .tag {
+        display: inline-block;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        margin-bottom: 10px;
+      }
+
+      .tag.primary {
+        color: var(--primary);
+        background: var(--primary-soft);
+      }
+
+      .tag.secondary {
+        color: var(--secondary);
+        background: var(--secondary-soft);
+      }
+
+      .tag.accent {
+        color: #8f5b00;
+        background: var(--accent-soft);
+      }
+
+      .tag.success {
+        color: #176b35;
+        background: var(--success-soft);
+      }
+
+      .tag.danger {
+        color: #9e2b2b;
+        background: var(--danger-soft);
+      }
+
+      ul {
+        padding-left: 18px;
+        margin: 10px 0 0;
+        color: var(--muted);
+        line-height: 1.65;
+      }
+
+      li + li {
+        margin-top: 6px;
+      }
+
+      .timeline {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+        margin-top: 8px;
+      }
+
+      .week {
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 18px;
+        background: linear-gradient(180deg, #ffffff, #f9fcfb);
+      }
+
+      .week strong {
+        display: block;
+        font-size: 1rem;
+        margin-bottom: 10px;
+      }
+
+      .week span {
+        display: inline-block;
+        margin-bottom: 12px;
+        color: var(--primary);
+        background: var(--primary-soft);
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-weight: 700;
+        font-size: 0.78rem;
+      }
+
+      .sprint {
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        padding: 22px;
+        background: #fcfefd;
+      }
+
+      .sprint h3 {
+        font-size: 1.2rem;
+        margin-bottom: 8px;
+      }
+
+      .sprint .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin: 14px 0 16px;
+      }
+
+      .pill {
+        padding: 7px 10px;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        border: 1px solid var(--line);
+        background: #fff;
+      }
+
+      .sprint-columns {
+        display: grid;
+        grid-template-columns: 1.2fr 1fr;
+        gap: 16px;
+      }
+
+      .story-list {
+        display: grid;
+        gap: 12px;
+      }
+
+      .story {
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 16px;
+        background: white;
+      }
+
+      .story strong {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 0.98rem;
+      }
+
+      .story p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.55;
+        font-size: 0.93rem;
+      }
+
+      .highlight {
+        padding: 18px 20px;
+        border-radius: 20px;
+        background: linear-gradient(135deg, var(--primary-soft), #f2fbf8);
+        border: 1px solid #c6e9e2;
+        color: var(--ink);
+      }
+
+      .footer {
+        text-align: center;
+        color: var(--muted);
+        font-size: 0.9rem;
+        padding-top: 8px;
+      }
+
+      @media (max-width: 940px) {
+        .hero-grid,
+        .grid-2,
+        .grid-3,
+        .timeline,
+        .sprint-columns {
+          grid-template-columns: 1fr;
+        }
+
+        .slide-header {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+      }
+
+      @media print {
+        body {
+          background: white;
+        }
+
+        .shell {
+          width: 100%;
+          padding: 0;
+        }
+
+        .hero,
+        .slide {
+          box-shadow: none;
+          break-inside: avoid;
+          page-break-inside: avoid;
+        }
+
+        .toc {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <span class="eyebrow">SmartBills Cleaner · Gestión Ágil</span>
+        <h1>Presentación de metodología ágil, roles simulados y desarrollo por sprint</h1>
+        <p>
+          Esta presentación resume cómo se aplicó Scrum en un proyecto desarrollado por una sola
+          persona, adaptando los roles y ceremonias de forma disciplinada. El enfoque se apoya en
+          el backlog del proyecto y en las evidencias de sprint compartidas para mostrar qué se
+          planificó, qué se ejecutó y qué postura metodológica se asumió.
+        </p>
+        <div class="hero-grid">
+          <article class="metric">
+            <strong>Scrum Adaptado</strong>
+            <span>Marco ágil usado de forma individual, con roles simulados por momentos.</span>
+          </article>
+          <article class="metric">
+            <strong>Sprint de 4 semanas</strong>
+            <span>Ciclo operativo más realista para una ejecución unipersonal.</span>
+          </article>
+          <article class="metric">
+            <strong>2 Sprints clave</strong>
+            <span>Diseño/arquitectura inicial y luego seguridad, administración y soporte.</span>
+          </article>
+        </div>
+      </section>
+
+      <nav class="toc">
+        <a href="#metodologia">Metodología</a>
+        <a href="#roles">Roles simulados</a>
+        <a href="#ceremonias">Ceremonias</a>
+        <a href="#sprint4">Sprint de 4 semanas</a>
+        <a href="#sprint1">Sprint 1</a>
+        <a href="#sprint2">Sprint 2</a>
+        <a href="#postura">Postura en sustentación</a>
+      </nav>
+
+      <section class="slide" id="metodologia">
+        <div class="slide-header">
+          <div>
+            <div class="tag primary">1. Metodología</div>
+            <h2 class="slide-title">Metodologías ágiles que se usaron</h2>
+          </div>
+          <div class="slide-note">Base teórica: Scrum + gestión incremental del Product Backlog</div>
+        </div>
+        <div class="grid-2">
+          <article class="card">
+            <h3>Scrum como marco principal</h3>
+            <p>
+              Se trabajó con una lógica iterativa e incremental: planificación de sprint,
+              ejecución, revisión del avance y retrospectiva. Aunque el backlog original plantea
+              sprints de 2 semanas, para la ejecución individual se adoptó un ciclo operativo de
+              4 semanas para reducir sobrecarga administrativa y concentrar mejor el desarrollo.
+            </p>
+          </article>
+          <article class="card">
+            <h3>Backlog orientado por valor</h3>
+            <p>
+              El trabajo se organizó a partir del Product Backlog y del Release Plan del proyecto,
+              priorizando primero diseño técnico, arquitectura y contratos, y luego funcionalidades
+              de seguridad, administración, auditoría y flujos de negocio visibles en el MVP.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="slide" id="roles">
+        <div class="slide-header">
+          <div>
+            <div class="tag secondary">2. Roles</div>
+            <h2 class="slide-title">Cómo se manejaron los roles siendo una sola persona</h2>
+          </div>
+          <div class="slide-note">Los roles no desaparecen: se simulan con responsabilidades separadas.</div>
+        </div>
+        <div class="grid-3">
+          <article class="card">
+            <div class="tag primary">Scrum Master</div>
+            <p>
+              Se asume este rol al inicio y cierre del sprint. La función es ordenar el trabajo,
+              revisar impedimentos, mantener el backlog actualizado y asegurar que se cumplan las
+              ceremonias y la disciplina del proceso.
+            </p>
+          </article>
+          <article class="card">
+            <div class="tag secondary">Developer</div>
+            <p>
+              Se asume este rol durante la ejecución técnica. Aquí se diseñan pantallas, se
+              desarrolla backend y frontend, se integra la base de datos, se validan criterios de
+              aceptación y se documenta la evidencia del sprint.
+            </p>
+          </article>
+          <article class="card">
+            <div class="tag accent">Postura recomendada</div>
+            <p>
+              En la sustentación conviene decir que <strong>los roles fueron simulados de forma
+              controlada</strong>. No se presenta como un equipo ficticio, sino como un
+              <strong>proyecto individual que aplicó Scrum adaptado</strong>, separando momentos de
+              planeación, ejecución y evaluación.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="slide" id="ceremonias">
+        <div class="slide-header">
+          <div>
+            <div class="tag accent">3. Ceremonias</div>
+            <h2 class="slide-title">Cómo se desarrollan backlog, release y retrospectiva</h2>
+          </div>
+          <div class="slide-note">Versión breve y defendible para una sustentación individual</div>
+        </div>
+        <div class="grid-2">
+          <article class="card">
+            <h3>Product Backlog</h3>
+            <p>
+              Es la lista priorizada de historias de usuario, tareas técnicas y entregables de
+              diseño. En este proyecto el backlog se actualiza según valor, dependencias y
+              viabilidad real de implementación.
+            </p>
+            <ul>
+              <li>Se refinan historias, criterios de aceptación y DoD.</li>
+              <li>Se reordena el trabajo según avance real del MVP.</li>
+              <li>Se usa como base para seleccionar el Sprint Backlog.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Sprint Planning</h3>
+            <p>
+              Al inicio del sprint se define qué historias se comprometen, cuál es el objetivo del
+              sprint y qué entregables serán demostrables al final del ciclo.
+            </p>
+            <ul>
+              <li>Se priorizan ítems factibles en 4 semanas.</li>
+              <li>Se revisan dependencias técnicas y académicas.</li>
+              <li>Se define una meta concreta del sprint.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Sprint Review / Release</h3>
+            <p>
+              Al cierre se presenta lo construido, se contrasta con lo planeado y se identifican
+              diferencias entre la planificación original y la implementación real.
+            </p>
+            <ul>
+              <li>Se demuestran funcionalidades visibles o artefactos técnicos.</li>
+              <li>Se revisa el cumplimiento de criterios de aceptación.</li>
+              <li>Se ajusta el Release Plan frente al avance real.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Sprint Retrospective</h3>
+            <p>
+              Espacio de mejora del proceso. En un proyecto individual sirve para detectar qué
+              decisiones ayudaron, qué bloqueó el avance y qué ajustes deben hacerse en el
+              siguiente sprint.
+            </p>
+            <ul>
+              <li>Qué funcionó: foco y avance técnico.</li>
+              <li>Qué no funcionó: sobreestimación o dependencias externas.</li>
+              <li>Qué cambiar: alcance y secuencia del siguiente sprint.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section class="slide" id="sprint4">
+        <div class="slide-header">
+          <div>
+            <div class="tag success">4. Cadencia</div>
+            <h2 class="slide-title">Ejemplo de sprint de 4 semanas</h2>
+          </div>
+          <div class="slide-note">Adaptación práctica para un solo desarrollador</div>
+        </div>
+        <div class="timeline">
+          <article class="week">
+            <span>Semana 1</span>
+            <strong>Planificación y diseño</strong>
+            <ul>
+              <li>Refinar backlog.</li>
+              <li>Definir objetivo del sprint.</li>
+              <li>Partir tareas técnicas y académicas.</li>
+            </ul>
+          </article>
+          <article class="week">
+            <span>Semana 2</span>
+            <strong>Construcción principal</strong>
+            <ul>
+              <li>Desarrollo backend y frontend.</li>
+              <li>Base de datos y endpoints.</li>
+              <li>Primeras validaciones funcionales.</li>
+            </ul>
+          </article>
+          <article class="week">
+            <span>Semana 3</span>
+            <strong>Integración y pruebas</strong>
+            <ul>
+              <li>Unión de módulos.</li>
+              <li>Revisión de criterios de aceptación.</li>
+              <li>Corrección de hallazgos.</li>
+            </ul>
+          </article>
+          <article class="week">
+            <span>Semana 4</span>
+            <strong>Review y retrospectiva</strong>
+            <ul>
+              <li>Preparar demo.</li>
+              <li>Comparar plan vs ejecución.</li>
+              <li>Actualizar backlog y lecciones aprendidas.</li>
+            </ul>
+          </article>
+        </div>
+        <div class="highlight" style="margin-top: 18px;">
+          En la exposición puedes decir que el sprint de 4 semanas fue una <strong>adaptación
+          metodológica consciente</strong>, útil para equilibrar desarrollo, documentación y
+          validación académica dentro de un proyecto individual.
+        </div>
+      </section>
+
+      <section class="slide" id="sprint1">
+        <div class="slide-header">
+          <div>
+            <div class="tag primary">5. Sprint 1</div>
+            <h2 class="slide-title">Sprint 1 finalizado: diseño técnico, arquitectura y base del flujo</h2>
+          </div>
+          <div class="slide-note">Fuente: backlog Excel + tablero “Sprint 1 Finalizado” compartido</div>
+        </div>
+        <article class="sprint">
+          <h3>Objetivo del sprint</h3>
+          <p style="margin: 0; color: var(--muted); line-height: 1.65;">
+            Construir la base conceptual y técnica del proyecto: modelado del proceso de negocio,
+            arquitectura, contratos entre capas y primeros componentes del flujo documental e
+            inteligencia artificial.
+          </p>
+          <div class="meta">
+            <span class="pill">Duración adaptada: 4 semanas</span>
+            <span class="pill">Enfoque: Diseño + preparación técnica</span>
+            <span class="pill">Resultado: Base del MVP</span>
+          </div>
+          <div class="sprint-columns">
+            <div class="story-list">
+              <article class="story">
+                <strong>DS-01 · Modelar el proceso de negocio completo de Smart Bills Cleaner</strong>
+                <p>
+                  Incluye BPMN del flujo upload → OCR → validación → consulta NLP → reporte. Se
+                  alinea directamente con el tablero donde aparece “Modelar el proceso de negocio”.
+                </p>
+              </article>
+              <article class="story">
+                <strong>DS-03 · Definir contratos de API entre capas</strong>
+                <p>
+                  Se usó para formalizar cómo se conectan frontend, backend y servicios externos,
+                  y en el tablero aparece como “Definir contratos de API entre capas”.
+                </p>
+              </article>
+              <article class="story">
+                <strong>DS-06 · Diseñar UI/UX del módulo de consultas NLP</strong>
+                <p>
+                  Permite preparar la experiencia conversacional antes de la implementación
+                  completa del módulo de lenguaje natural.
+                </p>
+              </article>
+              <article class="story">
+                <strong>DS-07 · Diseñar el flujo de Prompt Engineering para el LLM</strong>
+                <p>
+                  Se enfoca en cómo estructurar contexto, pregunta y respuesta dentro del pipeline
+                  RAG del proyecto.
+                </p>
+              </article>
+              <article class="story">
+                <strong>Tareas técnicas observadas en el tablero</strong>
+                <p>
+                  Endpoint REST `POST /facturas/cargar`, almacenamiento temporal tipo S3 y diseño /
+                  despliegue de vectorización y base de datos vectorial como preparación del motor
+                  documental.
+                </p>
+              </article>
+            </div>
+            <div class="card">
+              <h3>Entregables visibles del sprint</h3>
+              <ul>
+                <li>Diagrama BPMN del negocio.</li>
+                <li>Arquitectura por capas y flujo de datos.</li>
+                <li>Definición de contratos API.</li>
+                <li>Diseño de la experiencia NLP.</li>
+                <li>Base técnica inicial del flujo de carga y vectorización.</li>
+              </ul>
+              <h3 style="margin-top: 16px;">Ejemplo breve para decirlo</h3>
+              <p>
+                “En el primer sprint concentré el trabajo en la definición del proceso, la
+                arquitectura y los contratos técnicos, porque eso me permitía reducir riesgo antes
+                de desarrollar funcionalidades de seguridad y operación.”
+              </p>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="slide" id="sprint2">
+        <div class="slide-header">
+          <div>
+            <div class="tag secondary">6. Sprint 2</div>
+            <h2 class="slide-title">Sprint 2: seguridad, administración, auditoría y soporte al usuario</h2>
+          </div>
+          <div class="slide-note">Fuente: tablero “Sprint 2” + HUs detalladas compartidas</div>
+        </div>
+        <article class="sprint">
+          <h3>Objetivo del sprint</h3>
+          <p style="margin: 0; color: var(--muted); line-height: 1.65;">
+            Implementar la base de seguridad y gobierno del sistema: autenticación, gestión de
+            usuarios, auditoría, administración y comunicación al usuario mediante correo o
+            simulación funcional.
+          </p>
+          <div class="meta">
+            <span class="pill">Duración adaptada: 4 semanas</span>
+            <span class="pill">Enfoque: Seguridad + trazabilidad</span>
+            <span class="pill">Resultado: Control de acceso del MVP</span>
+          </div>
+          <div class="sprint-columns">
+            <div class="story-list">
+              <article class="story">
+                <strong>US · Inicio de sesión</strong>
+                <p>
+                  Registro e inicio de sesión seguro con correo y contraseña, hash con bcrypt, JWT
+                  y el flujo proyectado de refresh token y recuperación de contraseña.
+                </p>
+              </article>
+              <article class="story">
+                <strong>US · Roles de gestión de usuarios y seguridad</strong>
+                <p>
+                  Gestión de roles `Admin`, `Analista` y `Viewer`, con control de permisos,
+                  restricción de acceso a facturas y registro de intentos no autorizados.
+                </p>
+              </article>
+              <article class="story">
+                <strong>US · Gestión de administrador / auditoría</strong>
+                <p>
+                  Registro de acciones sobre facturas: carga, consulta y eliminación, con usuario,
+                  acción, timestamp e IP, visibles desde un panel administrativo.
+                </p>
+              </article>
+              <article class="story">
+                <strong>US · Auditorías y email communication</strong>
+                <p>
+                  Notificaciones por correo cuando una factura es procesada o falla. Para la
+                  sustentación puede presentarse como implementado o simulado según el estado real.
+                </p>
+              </article>
+              <article class="story">
+                <strong>Ítems observados en el tablero</strong>
+                <p>
+                  “Roles de Gestión de Usuarios”, “Gestión de administración”, “user functions”,
+                  “Creación de reportes” y “Email comunication”.
+                </p>
+              </article>
+            </div>
+            <div class="card">
+              <h3>Entregables visibles del sprint</h3>
+              <ul>
+                <li>Login y protección básica de acceso.</li>
+                <li>Gestión de usuarios desde frontend.</li>
+                <li>Auditoría de eventos del sistema.</li>
+                <li>Panel administrativo para revisión de logs.</li>
+                <li>Base de comunicación por correo o simulación del flujo.</li>
+              </ul>
+              <h3 style="margin-top: 16px;">Ejemplo breve para decirlo</h3>
+              <p>
+                “En el segundo sprint enfoqué el desarrollo en asegurar el sistema: identidad,
+                roles, trazabilidad y comunicación al usuario, porque esto daba soporte al uso
+                real del MVP y fortalecía el componente académico de seguridad.”
+              </p>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="slide" id="postura">
+        <div class="slide-header">
+          <div>
+            <div class="tag danger">7. Postura</div>
+            <h2 class="slide-title">Qué decir en la sustentación siendo el único integrante</h2>
+          </div>
+          <div class="slide-note">Mensaje corto, honesto y metodológicamente sólido</div>
+        </div>
+        <div class="grid-2">
+          <article class="card">
+            <h3>Postura recomendada</h3>
+            <p>
+              “El proyecto se desarrolló de forma individual, por lo que las prácticas Scrum se
+              aplicaron de manera adaptada. Los roles de Scrum Master y Developer no fueron
+              desempeñados por personas distintas, sino por mí mismo en momentos separados del
+              proceso: primero para planificar y controlar, y luego para ejecutar y validar.”
+            </p>
+          </article>
+          <article class="card">
+            <h3>Por qué esta postura funciona</h3>
+            <ul>
+              <li>No inventa un equipo que no existe.</li>
+              <li>Demuestra comprensión real del marco ágil.</li>
+              <li>Justifica la adaptación del sprint a 4 semanas.</li>
+              <li>Permite mostrar evidencia clara de planeación, ejecución y retrospectiva.</li>
+            </ul>
+          </article>
+        </div>
+        <div class="highlight" style="margin-top: 18px;">
+          Frase de cierre sugerida: <strong>“Más que replicar Scrum de forma literal, apliqué sus
+          principios de iteración, priorización, revisión y mejora continua de manera compatible
+          con un proyecto individual.”</strong>
+        </div>
+      </section>
+
+      <p class="footer">
+        Documento generado para apoyo de sustentación · Basado en el backlog
+        `SBC_ProductBacklog_v2.xlsx` y en los tableros de sprint compartidos.
+      </p>
+    </main>
+  </body>
+</html>
