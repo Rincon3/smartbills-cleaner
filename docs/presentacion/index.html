@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SmartBills Cleaner · Review, Retro y Planning</title>
+    <script type="module">
+      import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+      mermaid.initialize({
+        startOnLoad: true,
+        theme: "base",
+        themeVariables: {
+          primaryColor: "#dff5f1",
+          primaryTextColor: "#16322f",
+          primaryBorderColor: "#0f8b7d",
+          lineColor: "#56706c",
+          secondaryColor: "#e4eef9",
+          tertiaryColor: "#fff3d6"
+        }
+      });
+    </script>
+    <style>
+      :root {
+        --bg: #f4f7f5;
+        --paper: #ffffff;
+        --ink: #16322f;
+        --muted: #56706c;
+        --line: #d5e2df;
+        --primary: #0f8b7d;
+        --primary-soft: #dff5f1;
+        --secondary: #1d5d9b;
+        --secondary-soft: #e4eef9;
+        --accent: #f59f00;
+        --accent-soft: #fff3d6;
+        --danger-soft: #fdeaea;
+        --success-soft: #e7f8eb;
+        --shadow: 0 18px 45px rgba(22, 50, 47, 0.1);
+      }
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        margin: 0;
+        font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at top left, rgba(15, 139, 125, 0.08), transparent 28%),
+          linear-gradient(180deg, #f9fbfa 0%, var(--bg) 100%);
+      }
+      .shell { width: min(1180px, calc(100% - 32px)); margin: 0 auto; padding: 28px 0 56px; }
+      .hero, .slide {
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 28px;
+        box-shadow: var(--shadow);
+      }
+      .hero { padding: 42px; margin-bottom: 22px; position: relative; overflow: hidden; }
+      .eyebrow {
+        display: inline-flex; padding: 8px 14px; border-radius: 999px;
+        background: var(--primary-soft); color: var(--primary);
+        font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; font-size: 0.76rem;
+      }
+      h1, h2, h3 { margin: 0; }
+      h1 { font-size: clamp(2rem, 4vw, 3.4rem); line-height: 1.08; margin-top: 16px; max-width: 880px; }
+      .hero p { max-width: 820px; color: var(--muted); line-height: 1.7; font-size: 1.05rem; }
+      .hero-grid, .grid-2, .grid-3, .grid-4 { display: grid; gap: 14px; }
+      .hero-grid, .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 24px; }
+      .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .metric, .card, .story {
+        padding: 18px 20px; border-radius: 20px; border: 1px solid var(--line); background: #fbfdfc;
+      }
+      .metric strong { display: block; font-size: 1.4rem; margin-bottom: 6px; }
+      .metric span, .card p, .story p, li { color: var(--muted); line-height: 1.6; }
+      .toc { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 22px; }
+      .toc a {
+        text-decoration: none; color: var(--secondary); border: 1px solid #cfe0f4;
+        background: var(--secondary-soft); border-radius: 999px; padding: 8px 12px;
+        font-weight: 600; font-size: 0.86rem;
+      }
+      .slide { padding: 30px; margin-bottom: 20px; }
+      .slide-header { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 20px; align-items: flex-start; }
+      .tag {
+        display: inline-block; padding: 6px 10px; border-radius: 999px; font-size: 0.78rem;
+        font-weight: 700; margin-bottom: 10px;
+      }
+      .tag.primary { color: var(--primary); background: var(--primary-soft); }
+      .tag.secondary { color: var(--secondary); background: var(--secondary-soft); }
+      .tag.accent { color: #8f5b00; background: var(--accent-soft); }
+      .tag.success { color: #176b35; background: var(--success-soft); }
+      .tag.danger { color: #9e2b2b; background: var(--danger-soft); }
+      .slide-title { font-size: clamp(1.35rem, 2vw, 1.9rem); }
+      .note { font-size: 0.9rem; color: var(--muted); background: #f7faf9; border: 1px solid var(--line); padding: 10px 14px; border-radius: 14px; max-width: 420px; }
+      table { width: 100%; border-collapse: collapse; background: #fff; font-size: 0.92rem; }
+      th, td { border: 1px solid var(--line); padding: 9px 11px; text-align: left; vertical-align: top; }
+      th { background: #16322f; color: #fff; }
+      .ok { color: #176b35; font-weight: 700; }
+      .warn { color: #8f5b00; font-weight: 700; }
+      .shot { width: 100%; border-radius: 16px; border: 1px solid var(--line); display: block; }
+      figcaption { font-size: 0.82rem; color: var(--muted); margin-top: 8px; }
+      figure { margin: 0; }
+      ul { margin: 8px 0 0; padding-left: 18px; }
+      .highlight {
+        margin-top: 16px; padding: 16px 18px; border-radius: 18px;
+        background: linear-gradient(135deg, var(--primary-soft), #f2fbf8);
+        border: 1px solid #c6e9e2;
+      }
+      .mermaid { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 12px; overflow-x: auto; }
+      .pill { display: inline-block; padding: 5px 9px; border-radius: 999px; border: 1px solid var(--line); background: #fff; font-size: 0.78rem; font-weight: 700; margin-right: 6px; }
+      .footer { text-align: center; color: var(--muted); font-size: 0.88rem; }
+      .layer { border-radius: 18px; padding: 14px 16px; margin-bottom: 10px; border: 1px solid var(--line); }
+      .layer h3 { font-size: 0.92rem; margin-bottom: 10px; letter-spacing: 0.04em; text-transform: uppercase; }
+      .layer.presentacion { background: #e8f1fb; }
+      .layer.servicios { background: #e7f6ea; }
+      .layer.ia { background: #fde9d4; }
+      .layer.datos { background: #ece4f7; }
+      .boxes { display: flex; flex-wrap: wrap; gap: 8px; }
+      .box {
+        background: #fff; border: 1px dashed #94a3b8; border-radius: 12px;
+        padding: 10px 12px; font-size: 0.82rem; font-weight: 650; color: var(--ink); min-width: 140px;
+      }
+      .box small { display: block; font-weight: 500; color: var(--muted); margin-top: 4px; }
+      @media (max-width: 900px) {
+        .hero-grid, .grid-2, .grid-3, .grid-4, .slide-header { grid-template-columns: 1fr; flex-direction: column; }
+      }
+      @media print {
+        .toc { display: none; }
+        .slide, .hero { box-shadow: none; break-inside: avoid; page-break-inside: avoid; }
+        body { background: #fff; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <span class="eyebrow">SmartBills Cleaner · Ceremonias ágiles · Sprint 3 → Sprint 4</span>
+        <h1>Review, retrospectiva, planning y actualización de artefactos</h1>
+        <p>
+          Automatización de lectura y clasificación de facturas con OCR e IA.
+          Este deck cierra el Sprint 3 (ingesta, OCR real, CRUD y citas) y abre el Sprint 4
+          (vectorización y RAG). Responsable único: Miguel Rincón, con roles Scrum simulados
+          (PO / SM / Developer) en momentos separados.
+        </p>
+        <div class="hero-grid">
+          <article class="metric"><strong>Sprint 2 · 5/5</strong><span>Auth, roles, admin, reportes y correo cerrados.</span></article>
+          <article class="metric"><strong>Sprint 3 · evidencia</strong><span>OCR real + CRUD + tablero Jira 13/37 Done.</span></article>
+          <article class="metric"><strong>Sprint 4 · planning</strong><span>Vectorización, RAG y cadena de repliegue.</span></article>
+        </div>
+      </section>
+
+      <nav class="toc">
+        <a href="#s1">1. Review</a>
+        <a href="#s2">2. Retro</a>
+        <a href="#s3">3. Planning</a>
+        <a href="#s4">4. Tecnologías</a>
+        <a href="#s5">5. Arquitectura</a>
+        <a href="#s6">6. Release Plan</a>
+        <a href="#s7">7. BPMN</a>
+      </nav>
+
+      <!-- 1 REVIEW -->
+      <section class="slide" id="s1">
+        <div class="slide-header">
+          <div>
+            <div class="tag primary">1. Sprint review del sprint anterior</div>
+            <h2 class="slide-title">Sprint 3: qué se comprometió, qué se entregó y qué se verificó</h2>
+          </div>
+          <div class="note">Objetivo comprometido: “Dejar operativo el flujo central de ingesta y extracción de facturas.”</div>
+        </div>
+        <p style="color:var(--muted);margin:0 0 16px;">Contexto: el Sprint 2 ya había cerrado 5/5 (SBC-34, SBC-41, SBC-38, SBC-48, SBC-52). El review de este ciclo es el Sprint 3.</p>
+        <table>
+          <thead>
+            <tr><th>ID</th><th>Compromiso</th><th>Entregado en código</th><th>Verificado</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>SBC-22</td>
+              <td>Identificar y citar páginas/secciones que respaldan cada respuesta</td>
+              <td>chunk_source = factura_id:página, citas [Factura X, pág. Y], clic al fragmento en Consultas</td>
+              <td>Criterios 1–3 del ticket. Unitarias de citas.</td>
+            </tr>
+            <tr>
+              <td>SBC-4</td>
+              <td>Visualizar y eliminar documentos cargados</td>
+              <td>GET/DELETE /api/invoices, visor autenticado, listado con Ver/Eliminar</td>
+              <td>Capturas de listado y confirmación. Auditoría DELETE.</td>
+            </tr>
+            <tr>
+              <td>SBC-3</td>
+              <td>Identificar proveedor, NIT, total, subtotal, IVA y fecha; corregir a mano</td>
+              <td>extractInvoiceFields + modal de validación editable</td>
+              <td>Campos no hallados = “No detectado”. 12/12 tests.</td>
+            </tr>
+            <tr>
+              <td>SBC-8</td>
+              <td>Módulo OCR para PDF (propuesta Textract + Tesseract)</td>
+              <td>pdftotext / pdf.js / Tesseract (spa+eng). Sin Textract ni SQS aún</td>
+              <td>PDF de muestra PROCESSED en &lt;1 s. Logs de motor OCR.</td>
+            </tr>
+          </tbody>
+        </table>
+        <h3 style="margin:20px 0 8px;font-size:1.05rem;">Evidencia de progreso en Jira</h3>
+        <p style="color:var(--muted);margin:0 0 12px;">Tablero del proyecto: 37 actividades, 13 en Done y 24 en To Do. En los últimos 7 días se finalizaron 13 y se actualizaron 21. Los epics avanzan de forma desigual: OCR (SBC-1) al 86 %, usuarios/seguridad (SBC-33) al 75 % y consultas NL (SBC-18) al 25 %. El backlog está partido sobre todo en subtareas (46 %) e historias (33 %); no hay issues de tipo Error.</p>
+        <div class="grid-3" style="margin-top:4px;">
+          <figure>
+            <img class="shot" src="img/jira-tablero-estado.png" alt="Resumen de estado Jira: 13 Done y 24 To Do de 37 actividades" />
+            <figcaption>Figura 1. Resumen de estado Jira: 13 Done / 24 To Do · 13 finalizadas y 21 actualizadas en 7 días.</figcaption>
+          </figure>
+          <figure>
+            <img class="shot" src="img/jira-progreso-epics.png" alt="Progreso de epics SBC-1, SBC-33 y SBC-18" />
+            <figcaption>Figura 2. Progreso de epic: SBC-1 86 %, SBC-33 75 %, SBC-18 25 %.</figcaption>
+          </figure>
+          <figure>
+            <img class="shot" src="img/jira-tipos-trabajo.png" alt="Distribución de tipos de trabajo en Jira" />
+            <figcaption>Figura 3. Tipos de trabajo: subtarea 46 %, historia 33 %, epic 21 %.</figcaption>
+          </figure>
+        </div>
+        <h3 style="margin:22px 0 8px;font-size:1.05rem;">Evidencia de la app</h3>
+        <p style="color:var(--muted);margin:0 0 12px;">Factura real procesada con Tesseract: campos estructurados (número, proveedor, NIT, fecha, subtotal, IVA, total) junto al PDF original para validación (SBC-3 / SBC-8).</p>
+        <figure>
+          <img class="shot" src="img/app-ocr-factura-real.png" alt="Documento incorporado: campos extraídos y visor del PDF de Aguas de la Sabana" />
+          <figcaption>Figura 4. OCR sobre factura real (Aguas de la Sabana / Veolia): motor Tesseract, 1 página, confianza global 100 % y campos editables con confianza por dato.</figcaption>
+        </figure>
+        <div class="grid-2" style="margin-top:16px;">
+          <figure>
+            <img class="shot" src="img/jira-02-invoices-listado.png" alt="Listado de facturas con Ver y Eliminar" />
+            <figcaption>Figura 5. Repositorio documental: CRUD, confianza OCR y estados (evidencia SBC-4 / SBC-8).</figcaption>
+          </figure>
+          <figure>
+            <img class="shot" src="img/jira-03-ver-factura-ocr.png" alt="Modal de validación OCR" />
+            <figcaption>Figura 6. Validación: PDF original + campos extraídos editables (SBC-3 / SBC-8).</figcaption>
+          </figure>
+        </div>
+        <div class="grid-2" style="margin-top:14px;">
+          <figure>
+            <img class="shot" src="img/jira-04-eliminar-documento.png" alt="Confirmación de eliminación" />
+            <figcaption>Figura 7. Confirmación explícita antes de quitar archivo y registro (SBC-4).</figcaption>
+          </figure>
+          <figure>
+            <img class="shot" src="img/jira-01-unitarias-passed.png" alt="12 pruebas unitarias en PASS" />
+            <figcaption>Figura 8. Reporte de pruebas: 12/12 PASS · 18 sep 2026 · Node v23.7.0.</figcaption>
+          </figure>
+        </div>
+        <div class="highlight">
+          Incremento demostrable: login → carga PDF → OCR real → campos estructurados → ver/editar/borrar → consulta con cita a página.
+          Informe HTML: <a href="reporte-pruebas-unitarias.html">reporte-pruebas-unitarias.html</a>
+        </div>
+      </section>
+
+      <!-- 2 RETRO -->
+      <section class="slide" id="s2">
+        <div class="slide-header">
+          <div>
+            <div class="tag secondary">2. Sprint retrospective del sprint anterior</div>
+            <h2 class="slide-title">Qué funcionó, qué hubo que corregir y qué acción se acordó</h2>
+          </div>
+          <div class="note">Retro Sprint 3, con lecciones heredadas del Sprint 2.</div>
+        </div>
+        <div class="grid-3">
+          <article class="card">
+            <div class="tag success">Qué funcionó</div>
+            <ul>
+              <li>Sustituir OCR simulado por motor real desbloqueó evidencia defendible.</li>
+              <li>Contrato de datos (proveedor, NIT, fecha, subtotal, IVA, total) se fijó el día uno.</li>
+              <li>12 unitarias ancladas a PDF de muestra, no a seeds inventados.</li>
+              <li>La cadena de repliegue evitó depender de AWS para demostrar el flujo.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <div class="tag danger">Qué hubo que corregir</div>
+            <ul>
+              <li>El cliente Prisma no regeneraba InvoiceChunk y el backend Docker caía en loop.</li>
+              <li>El OCR “falso” contaminaba citas y el listado (proveedor derivado del filename).</li>
+              <li>SBC-8 pedía Textract + SQS; el código local no los tiene todavía.</li>
+              <li>SBC-7 pide soft-delete; hoy el DELETE es físico + log de auditoría.</li>
+              <li>Jira menciona Next.js; el frontend verificado es React + Vite.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <div class="tag accent">Acciones acordadas</div>
+            <ul>
+              <li>Documentar el stack real vs. propuesta en cada review (esta presentación).</li>
+              <li>Sprint 4: no comprometer Textract hasta un spike &lt; 1 día.</li>
+              <li>Mantener Tesseract/pdftotext como repliegue obligatorio.</li>
+              <li>Pasar citas (SBC-23/24) a “hecho” cuando el demo de Consultas esté grabado.</li>
+              <li>Agregar soft-delete si entra en capacidad; si no, explicitarlo en el backlog.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <!-- 3 PLANNING -->
+      <section class="slide" id="s3">
+        <div class="slide-header">
+          <div>
+            <div class="tag accent">3. Sprint planning del sprint siguiente</div>
+            <h2 class="slide-title">Sprint 4 · vectorización, RAG y cierre del componente inteligente</h2>
+          </div>
+          <div class="note">Capacidad: 1 persona · 4 semanas · ~24–32 h/semana · tope 20 SP.</div>
+        </div>
+        <p style="margin-top:0;"><span class="pill">Objetivo</span> Dejar consultas en lenguaje natural ancladas a fragmentos indexados, con citas verificables y repliegue si el LLM no está disponible.</p>
+        <table>
+          <thead>
+            <tr><th>ID</th><th>Tarea</th><th>Est.</th><th>Resp.</th><th>Dependencia</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>SBC-15</td><td>Persistir embeddings y consulta semántica (hoy JSON local 96-d; evaluar pgvector)</td><td>5 SP</td><td>Miguel</td><td>Chunks del S3</td></tr>
+            <tr><td>SBC-29</td><td>RAG: prompt de citas + respuesta grounded + UI Consultas</td><td>5 SP</td><td>Miguel</td><td>SBC-15, SBC-22</td></tr>
+            <tr><td>SBC-23</td><td>Cerrar chunk_source (factura_id + página) en demo y DoD</td><td>2 SP</td><td>Miguel</td><td>Indexación ya existe</td></tr>
+            <tr><td>SBC-24</td><td>Forzar formato [Factura X, pág. Y] y sanitizar citas inventadas</td><td>3 SP</td><td>Miguel</td><td>SBC-29</td></tr>
+            <tr><td>Spike</td><td>¿Textract sí/no? Si no hay cuenta AWS, mantener Tesseract</td><td>2 SP</td><td>Miguel</td><td>SBC-8</td></tr>
+            <tr><td>SBC-7</td><td>Soft-delete + auditoría (si sobra capacidad)</td><td>3 SP</td><td>Miguel</td><td>SBC-4</td></tr>
+          </tbody>
+        </table>
+        <div class="grid-2" style="margin-top:16px;">
+          <article class="card">
+            <h3>Riesgos</h3>
+            <ul>
+              <li>Sin OPENAI_API_KEY el LLM no corre: el repliegue local debe ser el camino feliz de la demo.</li>
+              <li>Embeddings hash de 96 dimensiones no son SBERT: no afirmar “modelo semántico de mercado”.</li>
+              <li>PDF escaneado lento (&gt;10 s) si Tesseract rasteriza muchas páginas.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>DoD del sprint</h3>
+            <ul>
+              <li>Pregunta → respuesta con al menos una cita clicable.</li>
+              <li>El fragmento mostrado coincide con chunk_source.</li>
+              <li>Pruebas unitarias del prompt/citas en verde.</li>
+              <li>Captura de Consultas para Jira SBC-22/23/24.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <!-- 4 TECH -->
+      <section class="slide" id="s4">
+        <div class="slide-header">
+          <div>
+            <div class="tag primary">4. Actualización de tecnologías</div>
+            <h2 class="slide-title">Stack verificado contra el código vs. propuesta original</h2>
+          </div>
+          <div class="note">Fuente: package.json, docker-compose, Dockerfile y src/.</div>
+        </div>
+        <table>
+          <thead>
+            <tr><th>Capa</th><th>Propuesta (backlog / Jira)</th><th>Verificado en código</th><th>Cambio</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Frontend</td><td>Next.js (SBC-6)</td><td>React 18 + Vite 5 + React Router</td><td class="warn">Se mantiene Vite. Más simple para MVP local.</td></tr>
+            <tr><td>Backend</td><td>API REST</td><td>Node 20 + Express 4 + ESM</td><td class="ok">Sin cambio de enfoque.</td></tr>
+            <tr><td>Datos</td><td>PostgreSQL</td><td>PostgreSQL 15 + Prisma 5</td><td class="ok">Alineado.</td></tr>
+            <tr><td>Auth</td><td>JWT access + refresh, bcrypt 12</td><td>JWT único 12 h, bcrypt 10, roles ADMIN/ANALYST/VIEWER</td><td class="warn">Refresh y rate-limit pendientes.</td></tr>
+            <tr><td>OCR</td><td>AWS Textract + Tesseract fallback + SQS</td><td>pdftotext / pdf.js / Tesseract spa+eng. Optional OpenAI JSON</td><td class="warn">Textract y SQS no activos.</td></tr>
+            <tr><td>Storage</td><td>S3</td><td>Disco local uploads/ (storageProvider LOCAL)</td><td class="warn">S3 aplazado a Release 3.</td></tr>
+            <tr><td>Vectorial</td><td>BD vectorial / SBERT</td><td>InvoiceChunk.embedding JSON 96-d + cosine local</td><td class="warn">pgvector/SBERT en Sprint 4.</td></tr>
+            <tr><td>LLM</td><td>Consultas NL con fuentes</td><td>gpt-4o-mini si hay API key; si no, respuesta grounded local</td><td class="ok">Repliegue implementado.</td></tr>
+            <tr><td>Runtime</td><td>—</td><td>Docker Compose: postgres, backend, frontend, pgAdmin</td><td class="ok">Nuevo respecto a Semestre 1.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- 5 ARCHITECTURE -->
+      <section class="slide" id="s5">
+        <div class="slide-header">
+          <div>
+            <div class="tag secondary">5. Actualización de la arquitectura</div>
+            <h2 class="slide-title">Componente inteligente: seis módulos</h2>
+          </div>
+          <div class="note">El componente IA deja de ser un stub: ingesta → OCR → extracción → chunks → retrieval → respuesta citada.</div>
+        </div>
+        <div class="mermaid">
+flowchart LR
+  U[Usuario] --> FE[React + Vite]
+  FE --> API[Express /api]
+  API --> AUTH[JWT + roles]
+  API --> INV[Invoices CRUD]
+  API --> Q[Query RAG]
+  INV --> OCR[OCR Engine]
+  OCR --> EXT[Field extractor]
+  EXT --> PG[(PostgreSQL Prisma)]
+  OCR --> CHK[Chunk + embed]
+  CHK --> PG
+  Q --> PG
+  Q --> LLM[OpenAI opcional]
+  FE --> UI[Listado / Visor / Consultas]
+        </div>
+        <h3 style="margin:18px 0 10px;">Seis módulos del componente inteligente</h3>
+        <table>
+          <thead><tr><th>#</th><th>Módulo</th><th>Archivo</th><th>Función</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>Ingesta</td><td>invoiceRoutes.js + Multer</td><td>PDF/PNG/JPG/TIFF ≤ 15 MB, persistencia local.</td></tr>
+            <tr><td>2</td><td>OCR</td><td>ocrEngine.js</td><td>Texto por página; Tesseract si el PDF está escaneado.</td></tr>
+            <tr><td>3</td><td>Extracción</td><td>extractInvoiceFields.js + processInvoiceDocument.js</td><td>NIT, fechas, montos, proveedor; merge con LLM opcional.</td></tr>
+            <tr><td>4</td><td>Indexación</td><td>chunkIndexService.js</td><td>InvoiceChunk, chunk_source, embedding.</td></tr>
+            <tr><td>5</td><td>Recuperación</td><td>queryService.js</td><td>65% cosine + 35% léxico; top-k fragmentos.</td></tr>
+            <tr><td>6</td><td>Generación citada</td><td>ragPrompt.js + ConsultPage.jsx</td><td>Cita [Factura X, pág. Y]; clic abre el fragmento; se descartan citas no recuperadas.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- 6 RELEASE -->
+      <section class="slide" id="s6">
+        <div class="slide-header">
+          <div>
+            <div class="tag success">6. Release Plan de todo el proyecto</div>
+            <h2 class="slide-title">Tres releases, nueve sprints y dependencias</h2>
+          </div>
+          <div class="note">Release 2 (sem. 9–16) y Release 3 (sem. 17–27). El avance actual cubre OCR/validación en local; S3/Textract y pgvector siguen como hitos del plan.</div>
+        </div>
+        <figure>
+          <img class="shot" src="img/release-plan.jpg" alt="Release Plan SmartBills: semanas, releases, épicas, incremento entregable e hitos" />
+          <figcaption>
+            Release Plan oficial: R2 (upload S3, OCR Textract, validación, vectorización, NLP/RAGAS) y R3 (analítica, clasificación, OAuth, CI/CD y entrega final).
+          </figcaption>
+        </figure>
+        <div class="highlight">
+          Posición actual respecto al plan: el flujo de extracción y validación OCR ya es demostrable en local (equivalente a sem. 11–12), sin S3 ni cola Textract todavía (sem. 9–10). El siguiente bloque del plan es vectorización / pgvector y NLP con citación (sem. 13–16).
+        </div>
+      </section>
+
+      <!-- 8 BPMN -->
+      <section class="slide" id="s7">
+        <div class="slide-header">
+          <div>
+            <div class="tag danger">7. Actualización del BPMN / mapa de proceso</div>
+            <h2 class="slide-title">El diagrama de capas del Semestre 1, actualizado al flujo real</h2>
+          </div>
+          <div class="note">Se conserva la estructura de cuatro capas. Se corrige tecnología y se añaden validación humana, repliegue OCR y citas.</div>
+        </div>
+
+        <h3 style="margin:0 0 10px;">Propuesta original (Semestre 1)</h3>
+        <figure>
+          <img class="shot" src="img/arquitectura-semestre1.jpg" alt="Diagrama de capas Semestre 1: presentación, Django REST, Textract, Bedrock, BD vectorial y relacional" />
+          <figcaption>Figura. Mapa de proceso/arquitectura planteado: UI → Django REST → Textract + Bedrock → BD vectorial y relacional.</figcaption>
+        </figure>
+
+        <h3 style="margin:22px 0 10px;">Mapa de proceso actual (mismas capas, stack verificado)</h3>
+        <div style="text-align:center;margin-bottom:10px;">
+          <span class="pill">Usuario final</span>
+        </div>
+        <div class="layer presentacion">
+          <h3>1. Capa de presentación · React + Vite</h3>
+          <div class="boxes">
+            <div class="box">Login / JWT<small>Validación de ID y rol</small></div>
+            <div class="box">Carga de documentos<small>PDF, PNG, JPG, TIFF</small></div>
+            <div class="box">Listado · Ver · Eliminar<small>Confirmación + visor original</small></div>
+            <div class="box">Validación OCR<small>Corregir campos extraídos</small></div>
+            <div class="box">Consultas NL<small>Citas [Factura X, pág. Y]</small></div>
+          </div>
+        </div>
+        <div class="layer servicios">
+          <h3>2. Capa de servicios · Express REST (antes Django)</h3>
+          <div class="boxes">
+            <div class="box">Auth y roles<small>/api/auth · ADMIN / ANALYST / VIEWER</small></div>
+            <div class="box">Orquestador de facturas<small>upload → OCR → indexar</small></div>
+            <div class="box">Control de flujo OCR<small>nativo / Tesseract</small></div>
+            <div class="box">CRUD + auditoría<small>GET, PUT, DELETE + AuditLog</small></div>
+            <div class="box">Consulta usuario<small>/api/query pregunta + fuentes</small></div>
+          </div>
+        </div>
+        <div class="layer ia">
+          <h3>3. Capa de inteligencia · local + LLM opcional (antes Textract / Bedrock fijos)</h3>
+          <div class="boxes">
+            <div class="box">OCR<small>pdftotext / pdf.js → Tesseract</small></div>
+            <div class="box">Extracción de campos<small>Reglas COP/NIT + OpenAI JSON</small></div>
+            <div class="box">Vectorización / embeddings<small>Chunks por página · 96-d local</small></div>
+            <div class="box">Generación<small>gpt-4o-mini o respuesta grounded</small></div>
+          </div>
+        </div>
+        <div class="layer datos">
+          <h3>4. Capa de datos · PostgreSQL 15 + Prisma</h3>
+          <div class="boxes">
+            <div class="box">Relacional<small>User, Invoice, InvoiceField, AuditLog</small></div>
+            <div class="box">Índice documental<small>InvoiceChunk + embedding JSON</small></div>
+            <div class="box">Archivos<small>uploads/ local (S3 en R3)</small></div>
+          </div>
+        </div>
+
+        <table style="margin-top:16px;">
+          <thead><tr><th>#</th><th>Semestre 1 (diagrama original)</th><th>Proceso actual</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td>Capa de servicios en Django REST y API Gateway genérico.</td>
+              <td>Express + JWT en Node; mismos contratos REST (login, carga, consulta autorizada).</td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td>OCR solo como AWS Textract, sin rama de calidad baja.</td>
+              <td>Gateway: si hay texto nativo se usa pdftotext/pdf.js; si no, Tesseract. Textract queda repliegue futuro, no el camino feliz.</td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td>LLM fijo en AWS Bedrock; vector DB aparte de la relacional.</td>
+              <td>OpenAI opcional + respuesta local si no hay clave. Embeddings viven en PostgreSQL (InvoiceChunk) hasta pgvector.</td>
+            </tr>
+            <tr>
+              <td>4</td>
+              <td>El flujo UI era login → carga → consulta NL, sin validación humana ni borrado controlado.</td>
+              <td>Se insertan dos actividades: validar/corregir campos con el original a la vista, y confirmar eliminación con auditoría.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <p class="footer">
+        SmartBills Cleaner · Presentación de ceremonias Sprint 3→4 · Evidencia 18 sep 2026 ·
+        Abrir este archivo desde <code>docs/presentacion/index.html</code>
+      </p>
+    </main>
+  </body>
+</html>

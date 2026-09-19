@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Evidencia Jira - pruebas unitarias SmartBills</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 32px; color: #0f172a; background: #f8fafc; }
+    h1 { margin-bottom: 8px; }
+    .badge { display: inline-block; padding: 6px 12px; border-radius: 999px; font-weight: 700; }
+    .ok { background: #dcfce7; color: #166534; }
+    .ko { background: #fee2e2; color: #991b1b; }
+    table { width: 100%; border-collapse: collapse; background: #fff; }
+    th, td { border: 1px solid #e2e8f0; padding: 10px 12px; text-align: left; }
+    th { background: #0f172a; color: #fff; }
+    tr.pass td:first-child { color: #166534; font-weight: 700; }
+    tr.fail td:first-child { color: #991b1b; font-weight: 700; }
+    .meta { margin: 16px 0 24px; }
+  </style>
+</head>
+<body>
+  <p>SmartBills Cleaner · evidencia para Jira</p>
+  <h1>Pruebas unitarias OCR e identificacion de facturas</h1>
+  <p class="badge ok">PASSED: 12/12 pasaron</p>
+  <div class="meta">
+    <div>Historia: Visualizar/eliminar documentos + OCR real de facturas PDF</div>
+    <div>Ejecutado: 2026-09-18T21:17:08.547Z</div>
+    <div>Node: v23.7.0 · darwin</div>
+  </div>
+  <table>
+    <thead>
+      <tr><th>Estado</th><th>Caso</th><th>Archivo</th><th>Duracion</th></tr>
+    </thead>
+    <tbody><tr class="pass">
+      <td>PASS</td>
+      <td>extrae campos clave de una factura colombiana</td>
+      <td>extractInvoiceFields.test.js</td>
+      <td>1.6 ms</td>
+    </tr><tr class="pass">
+      <td>PASS</td>
+      <td>identifica proveedor aunque el OCR entregue una sola linea</td>
+      <td>extractInvoiceFields.test.js</td>
+      <td>1.4 ms</td>
+    </tr><tr class="pass">
+      <td>PASS</td>
+      <td>parsea montos colombianos y fechas latinas</td>
+      <td>extractInvoiceFields.test.js</td>
+      <td>0.1 ms</td>
+    </tr><tr class="pass">
+      <td>PASS</td>
+      <td>marca error de identificacion si falta NIT y total</td>
+      <td>extractInvoiceFields.test.js</td>
+      <td>1.9 ms</td>
+    </tr><tr class="pass">
+      <td>PASS</td>
+      <td>deriva subtotal cuando solo hay total e IVA</td>
+      <td>extractInvoiceFields.test.js</td>
+      <td>0.4 ms</td>
+    </tr><tr class="pass">
+      <td>PASS</td>
+      <td>fusiona extraccion por reglas con resultado de modelo</td>
+      <td>extractInvoiceFields.test.js</td>
+      <td>0.2 ms</td>
+    </tr><tr class="pass">
+      <td>PASS</td>
+      <td>serializa y recupera paginas OCR</td>
+      <td>ocrEngine.test.js</td>
+      <td>0.7 ms</td>
+    </tr><tr class="pass">
+      <td>PASS</td>
+      <td>parseOcrPages retorna vacio si no hay texto</td>
+      <td>ocrEngine.test.js</td>
+      <td>0.6 ms</td>
+    </tr><tr class="pass">
+      <td>PASS</td>
+      <td>extrae texto real de un PDF de factura de prueba</td>
+      <td>ocrEngine.test.js</td>
+      <td>352.6 ms</td>
+    </tr><tr class="pass">
+      <td>PASS</td>
+      <td>procesa PDF de muestra y extrae datos requeridos de la factura</td>
+      <td>processInvoiceDocument.test.js</td>
+      <td>118.5 ms</td>
+    </tr><tr class="pass">
+      <td>PASS</td>
+      <td>construye identificadores de fragmento y cita</td>
+      <td>invoiceDocument.test.js</td>
+      <td>0.3 ms</td>
+    </tr><tr class="pass">
+      <td>PASS</td>
+      <td>arma paginas de respaldo con datos estructurados de la factura</td>
+      <td>invoiceDocument.test.js</td>
+      <td>0.2 ms</td>
+    </tr></tbody>
+  </table>
+</body>
+</html>

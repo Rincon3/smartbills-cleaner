@@ -1,0 +1,87 @@
+{
+  "story": "Visualizar/eliminar documentos + OCR real de facturas PDF",
+  "executedAt": "2026-09-18T21:17:08.547Z",
+  "finishedAt": "2026-09-18T21:17:09.147Z",
+  "environment": "darwin",
+  "node": "v23.7.0",
+  "totals": {
+    "passed": 12,
+    "failed": 0,
+    "total": 12
+  },
+  "result": "PASSED",
+  "tests": [
+    {
+      "name": "extrae campos clave de una factura colombiana",
+      "file": "/Users/miguelrinconclavijo/Desktop/study/Maestria en desarrollo IA/trabajo de grado maestria/smartbills/apps/backend/src/services/ocr/extractInvoiceFields.test.js",
+      "status": "PASS",
+      "durationMs": 1.596834
+    },
+    {
+      "name": "identifica proveedor aunque el OCR entregue una sola linea",
+      "file": "/Users/miguelrinconclavijo/Desktop/study/Maestria en desarrollo IA/trabajo de grado maestria/smartbills/apps/backend/src/services/ocr/extractInvoiceFields.test.js",
+      "status": "PASS",
+      "durationMs": 1.410333
+    },
+    {
+      "name": "parsea montos colombianos y fechas latinas",
+      "file": "/Users/miguelrinconclavijo/Desktop/study/Maestria en desarrollo IA/trabajo de grado maestria/smartbills/apps/backend/src/services/ocr/extractInvoiceFields.test.js",
+      "status": "PASS",
+      "durationMs": 0.058125
+    },
+    {
+      "name": "marca error de identificacion si falta NIT y total",
+      "file": "/Users/miguelrinconclavijo/Desktop/study/Maestria en desarrollo IA/trabajo de grado maestria/smartbills/apps/backend/src/services/ocr/extractInvoiceFields.test.js",
+      "status": "PASS",
+      "durationMs": 1.862041
+    },
+    {
+      "name": "deriva subtotal cuando solo hay total e IVA",
+      "file": "/Users/miguelrinconclavijo/Desktop/study/Maestria en desarrollo IA/trabajo de grado maestria/smartbills/apps/backend/src/services/ocr/extractInvoiceFields.test.js",
+      "status": "PASS",
+      "durationMs": 0.442458
+    },
+    {
+      "name": "fusiona extraccion por reglas con resultado de modelo",
+      "file": "/Users/miguelrinconclavijo/Desktop/study/Maestria en desarrollo IA/trabajo de grado maestria/smartbills/apps/backend/src/services/ocr/extractInvoiceFields.test.js",
+      "status": "PASS",
+      "durationMs": 0.160083
+    },
+    {
+      "name": "serializa y recupera paginas OCR",
+      "file": "/Users/miguelrinconclavijo/Desktop/study/Maestria en desarrollo IA/trabajo de grado maestria/smartbills/apps/backend/src/services/ocr/ocrEngine.test.js",
+      "status": "PASS",
+      "durationMs": 0.662833
+    },
+    {
+      "name": "parseOcrPages retorna vacio si no hay texto",
+      "file": "/Users/miguelrinconclavijo/Desktop/study/Maestria en desarrollo IA/trabajo de grado maestria/smartbills/apps/backend/src/services/ocr/ocrEngine.test.js",
+      "status": "PASS",
+      "durationMs": 0.582833
+    },
+    {
+      "name": "extrae texto real de un PDF de factura de prueba",
+      "file": "/Users/miguelrinconclavijo/Desktop/study/Maestria en desarrollo IA/trabajo de grado maestria/smartbills/apps/backend/src/services/ocr/ocrEngine.test.js",
+      "status": "PASS",
+      "durationMs": 352.607125
+    },
+    {
+      "name": "procesa PDF de muestra y extrae datos requeridos de la factura",
+      "file": "/Users/miguelrinconclavijo/Desktop/study/Maestria en desarrollo IA/trabajo de grado maestria/smartbills/apps/backend/src/services/ocr/processInvoiceDocument.test.js",
+      "status": "PASS",
+      "durationMs": 118.510583
+    },
+    {
+      "name": "construye identificadores de fragmento y cita",
+      "file": "/Users/miguelrinconclavijo/Desktop/study/Maestria en desarrollo IA/trabajo de grado maestria/smartbills/apps/backend/src/services/invoiceDocument.test.js",
+      "status": "PASS",
+      "durationMs": 0.300375
+    },
+    {
+      "name": "arma paginas de respaldo con datos estructurados de la factura",
+      "file": "/Users/miguelrinconclavijo/Desktop/study/Maestria en desarrollo IA/trabajo de grado maestria/smartbills/apps/backend/src/services/invoiceDocument.test.js",
+      "status": "PASS",
+      "durationMs": 0.157125
+    }
+  ]
+}
