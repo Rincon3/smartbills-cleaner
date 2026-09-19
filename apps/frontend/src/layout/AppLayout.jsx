@@ -20,7 +20,7 @@ export function AppLayout() {
 
         <nav className="sidebar-nav">
           {navigation.map((item) => (
-            <NavLink key={item.to} to={item.to} end={item.to === "/"} className="nav-item">
+            <NavLink key={item.to} to={item.to} end={item.to === "/app"} className="nav-item">
               <Icon name={item.icon} className="nav-icon" />
               <span>{item.label}</span>
             </NavLink>

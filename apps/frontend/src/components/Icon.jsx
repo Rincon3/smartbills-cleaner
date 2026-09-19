@@ -92,6 +92,16 @@ const icons = {
       strokeLinejoin="round"
     />
   ),
+  consult: (
+    <path
+      d="M5 5h10a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H9l-4 3v-3H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zm14 3h1a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-1v2l-3-2"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      fill="none"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  ),
   more: (
     <path
       d="M12 5.5a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm0 5.5a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm0 5.5a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"
