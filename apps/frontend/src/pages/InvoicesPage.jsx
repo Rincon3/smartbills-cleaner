@@ -6,8 +6,8 @@ import { InvoiceEditor } from "../components/InvoiceEditor";
 function formatCurrency(value) {
   return new Intl.NumberFormat("es-CO", {
     style: "currency",
-    currency: "EUR",
-    minimumFractionDigits: 2
+    currency: "COP",
+    maximumFractionDigits: 0
   }).format(value || 0);
 }
 
@@ -20,6 +20,7 @@ export function InvoicesPage() {
   });
   const [invoices, setInvoices] = useState([]);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [pendingDelete, setPendingDelete] = useState(null);
 
   const loadInvoices = () => api.getInvoices(filters).then(setInvoices);
 
@@ -56,7 +57,7 @@ export function InvoicesPage() {
         <div>
           <p className="eyebrow">Repositorio documental</p>
           <h1>Facturas cargadas</h1>
-          <p>Filtra, revisa, corrige y elimina documentos dentro del flujo del MVP.</p>
+          <p>Visualiza el archivo original, valida los datos extraidos por OCR y elimina documentos mal incorporados.</p>
         </div>
         <div className="stats-inline">
           <div>
@@ -105,6 +106,11 @@ export function InvoicesPage() {
               </tr>
             </thead>
             <tbody>
+              {invoices.length === 0 ? (
+                <tr>
+                  <td colSpan="7">Aun no hay documentos cargados.</td>
+                </tr>
+              ) : null}
               {invoices.map((invoice) => (
                 <tr key={invoice.id}>
                   <td>{invoice.code}</td>
@@ -118,10 +124,14 @@ export function InvoicesPage() {
                     </span>
                   </td>
                   <td className="table-actions">
-                    <button className="ghost-button" type="button" onClick={() => setSelectedInvoice(invoice)}>
-                      Validar
+                    <button
+                      className="ghost-button"
+                      type="button"
+                      onClick={async () => setSelectedInvoice(await api.getInvoice(invoice.id))}
+                    >
+                      Ver
                     </button>
-                    <button className="ghost-button danger" type="button" onClick={() => handleDelete(invoice.id)}>
+                    <button className="ghost-button danger" type="button" onClick={() => setPendingDelete(invoice)}>
                       Eliminar
                     </button>
                     <Icon name="more" className="more-icon" />
@@ -139,6 +149,33 @@ export function InvoicesPage() {
           onClose={() => setSelectedInvoice(null)}
           onSave={handleSave}
         />
+      ) : null}
+
+      {pendingDelete ? (
+        <div className="drawer-backdrop">
+          <section className="panel delete-modal">
+            <h3>Eliminar documento</h3>
+            <p>
+              Se quitara <strong>{pendingDelete.fileName}</strong> ({pendingDelete.code}) del repositorio y del
+              almacenamiento local.
+            </p>
+            <div className="delete-actions">
+              <button className="ghost-button" type="button" onClick={() => setPendingDelete(null)}>
+                Cancelar
+              </button>
+              <button
+                className="primary-button"
+                type="button"
+                onClick={async () => {
+                  await handleDelete(pendingDelete.id);
+                  setPendingDelete(null);
+                }}
+              >
+                Eliminar
+              </button>
+            </div>
+          </section>
+        </div>
       ) : null}
     </section>
   );

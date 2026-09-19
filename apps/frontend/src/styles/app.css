@@ -868,11 +868,59 @@ th {
 }
 
 .drawer {
-  width: min(520px, 100%);
+  width: min(920px, 100%);
   height: 100%;
   border-radius: 32px 0 0 32px;
   padding: 22px;
   overflow: auto;
+}
+
+.document-preview,
+.ocr-text-panel {
+  display: grid;
+  gap: 10px;
+  margin: 16px 0 20px;
+}
+
+.document-preview-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+}
+
+.document-frame,
+.document-image {
+  width: 100%;
+  min-height: 360px;
+  max-height: 48vh;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: #fff;
+  object-fit: contain;
+}
+
+.ocr-text-panel pre {
+  white-space: pre-wrap;
+  max-height: 180px;
+  overflow: auto;
+  background: rgba(241, 245, 249, 0.94);
+  border-radius: 16px;
+  padding: 12px;
+}
+
+.delete-modal {
+  width: min(420px, calc(100% - 32px));
+  margin: auto;
+  padding: 24px;
+  display: grid;
+  gap: 14px;
+}
+
+.delete-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
 }
 
 .drawer-header,
@@ -890,6 +938,79 @@ th {
   display: grid;
   place-items: center;
   text-align: center;
+}
+
+.consult-form,
+.consult-answer {
+  display: grid;
+  gap: 16px;
+}
+
+.consult-form textarea {
+  width: 100%;
+  min-height: 110px;
+  resize: vertical;
+  padding: 13px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(255, 255, 255, 0.92);
+  outline: none;
+}
+
+.consult-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.consult-answer-body {
+  line-height: 1.7;
+  font-size: 1.05rem;
+}
+
+.citation-chip {
+  display: inline;
+  margin: 0 4px;
+  padding: 2px 8px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+  font-weight: 800;
+}
+
+.sources-list {
+  display: grid;
+  gap: 10px;
+}
+
+.source-card {
+  text-align: left;
+  border: 1px solid var(--border);
+  background: rgba(248, 250, 252, 0.92);
+  border-radius: 18px;
+  padding: 14px 16px;
+  display: grid;
+  gap: 4px;
+}
+
+.source-card span {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.source-preview {
+  display: grid;
+  gap: 10px;
+}
+
+.source-preview pre {
+  white-space: pre-wrap;
+  background: rgba(241, 245, 249, 0.94);
+  border-radius: 18px;
+  padding: 16px;
+  font-family: "Manrope", sans-serif;
+  line-height: 1.6;
 }
 
 @media (max-width: 1180px) {

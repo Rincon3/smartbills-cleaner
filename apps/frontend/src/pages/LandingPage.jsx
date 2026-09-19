@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 
 const highlights = [
   "Carga drag & drop para PDF, PNG, JPG y TIFF",
-  "Extraccion OCR simulada con campos editables y confianza",
+  "OCR Tesseract/PDF para identificar facturas y extraer NIT, fechas y totales",
   "Dashboard ejecutivo con KPIs, auditoria y trazabilidad"
 ];
 
@@ -13,7 +13,7 @@ const sprintCards = [
   },
   {
     title: "Arquitectura lista para crecer",
-    copy: "Hoy funciona en modo simulado; manana puede conectar OCR y storage reales sin rehacer la UX."
+    copy: "OCR con Tesseract y lectura nativa de PDF, mas validacion humana de los campos extraidos."
   },
   {
     title: "Gobierno y control",
@@ -50,8 +50,8 @@ export function LandingPage() {
           <p className="eyebrow">MVP DE FACTURACION EDITORIAL</p>
           <h1>La app ya se siente como producto que optimisa las lecturas de tus facturas.</h1>
           <p>
-            SmartBills Cleaner organiza carga documental, OCR simulado, validacion manual,
-            auditoria y dashboard operativo para las primeras entregas del proyecto.
+            SmartBills Cleaner carga facturas (principalmente PDF), extrae los datos con OCR y permite
+            visualizar o eliminar cada documento para validar que quedo bien incorporado.
           </p>
           <div className="hero-actions">
             <Link className="primary-button" to="/login">

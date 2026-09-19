@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { api } from "../api/client";
+import { DocumentPreview } from "../components/DocumentPreview";
 
 export function UploadPage() {
   const inputRef = useRef(null);
@@ -38,7 +39,7 @@ export function UploadPage() {
         <div>
           <p className="eyebrow">Carga documental</p>
           <h1>Subir factura</h1>
-          <p>El archivo se guarda en almacenamiento local simulado tipo S3 y se procesa con OCR falso.</p>
+          <p>El archivo se guarda en el servidor y se lee con OCR real (PDF nativo o Tesseract si esta escaneado).</p>
         </div>
       </div>
 
@@ -77,8 +78,11 @@ export function UploadPage() {
         <section className="panel upload-result">
           <div className="panel-heading">
             <div>
-              <h3>Extraccion simulada completada</h3>
-              <p>Revisa los campos antes de continuar al listado general.</p>
+              <h3>Documento incorporado</h3>
+              <p>
+                Motor OCR: {uploadedInvoice.ocrEngine || "n/d"} · {uploadedInvoice.pageCount || 1} pagina(s). Revisa
+                los campos extraidos.
+              </p>
             </div>
           </div>
           <div className="upload-preview-grid">
@@ -110,6 +114,7 @@ export function UploadPage() {
               </div>
             ))}
           </div>
+          <DocumentPreview invoice={uploadedInvoice} />
         </section>
       ) : null}
     </section>

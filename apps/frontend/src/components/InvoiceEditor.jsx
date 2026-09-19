@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { DocumentPreview } from "./DocumentPreview";
 
 const labelToField = {
   Proveedor: "supplier",
@@ -51,13 +52,22 @@ export function InvoiceEditor({ invoice, onClose, onSave }) {
       <aside className="drawer">
         <div className="drawer-header">
           <div>
-            <p>Validar OCR</p>
+            <p>Validar documento</p>
             <h3>{invoice.code}</h3>
           </div>
           <button className="ghost-button" type="button" onClick={onClose}>
             Cerrar
           </button>
         </div>
+
+        <DocumentPreview invoice={invoice} />
+
+        {invoice.ocrRawText ? (
+          <details className="ocr-text-panel">
+            <summary>Texto extraido por OCR</summary>
+            <pre>{invoice.ocrRawText}</pre>
+          </details>
+        ) : null}
 
         <form className="drawer-form" onSubmit={submit}>
           <label>
@@ -114,7 +124,7 @@ export function InvoiceEditor({ invoice, onClose, onSave }) {
             <div className="panel-heading">
               <div>
                 <h3>Campos detectados</h3>
-                <p>Confianza simulada por campo</p>
+                <p>Campos detectados por OCR. Corrigelos si hace falta.</p>
               </div>
             </div>
             {form.fields.map((field, index) => (

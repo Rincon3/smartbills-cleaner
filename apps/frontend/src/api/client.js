@@ -78,5 +78,33 @@ export const api = {
   deleteInvoice: (id) =>
     request(`/invoices/${id}`, {
       method: "DELETE"
-    })
+    }),
+  getInvoiceFile: async (id) => {
+    const token = localStorage.getItem("smartbills_token");
+    const response = await fetch(`${API_URL}/invoices/${id}/file`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.message || "No se pudo abrir el documento");
+    }
+
+    const blob = await response.blob();
+    return {
+      url: URL.createObjectURL(blob),
+      mimeType: response.headers.get("content-type") || blob.type
+    };
+  },
+  queryInvoices: (payload) =>
+    request("/query", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    }),
+  getQuerySource: (params = {}) => {
+    const search = new URLSearchParams(
+      Object.entries(params).filter(([, value]) => value !== undefined && value !== "")
+    );
+    return request(`/query/source?${search.toString()}`);
+  }
 };
