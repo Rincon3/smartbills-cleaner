@@ -69,9 +69,13 @@ model Invoice {
   uploadedAt           DateTime       @default(now())
   storageProvider      String         @default("SIMULATED_S3")
   ocrAverageConfidence Float          @default(0)
+  ocrEngine            String         @default("none")
+  ocrRawText           String         @default("")
+  pageCount            Int            @default(0)
   ownerId              String
   owner                User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   fields               InvoiceField[]
+  chunks               InvoiceChunk[]
 }
 
 model InvoiceField {
@@ -81,5 +85,20 @@ model InvoiceField {
   confidence Float
   invoiceId  String
   invoice    Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+}
+
+model InvoiceChunk {
+  id          String   @id @default(cuid())
+  invoiceId   String
+  page        Int
+  section     String
+  text        String
+  chunkSource String
+  embedding   Json
+  createdAt   DateTime @default(now())
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId, page])
+  @@index([chunkSource])
 }
 

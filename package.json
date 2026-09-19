@@ -12,7 +12,9 @@
     "build": "npm run build --workspace backend && npm run build --workspace frontend",
     "db:generate": "npm run db:generate --workspace backend",
     "db:migrate": "npm run db:migrate --workspace backend",
-    "db:seed": "npm run db:seed --workspace backend"
+    "db:seed": "npm run db:seed --workspace backend",
+    "test": "npm test --workspace backend",
+    "test:jira": "npm run test:jira --workspace backend"
   }
 }
 

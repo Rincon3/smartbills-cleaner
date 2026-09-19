@@ -1,19 +1,20 @@
 import { Router } from "express";
 import fs from "fs";
-import path from "path";
 import multer from "multer";
 import { prisma } from "../config/prisma.js";
-import { simulateOcr } from "../utils/fakeOcr.js";
 import { createAuditLog } from "../services/auditService.js";
+import { indexInvoiceChunks } from "../services/chunkIndexService.js";
+import { processInvoiceDocument } from "../services/ocr/processInvoiceDocument.js";
 import { getClientIp } from "../utils/http.js";
+import { resolveStoredFile, uploadsDir } from "../utils/paths.js";
 
-const uploadDir = path.resolve("apps/backend/uploads");
+fs.mkdirSync(uploadsDir, { recursive: true });
 
 const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, uploadDir),
+  destination: (_req, _file, cb) => cb(null, uploadsDir),
   filename: (_req, file, cb) => {
     const uniquePrefix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    cb(null, `${uniquePrefix}-${file.originalname}`);
+    cb(null, `${uniquePrefix}-${file.originalname.replace(/\s+/g, "-")}`);
   }
 });
 
@@ -26,6 +27,7 @@ const allowedMimeTypes = [
 
 const upload = multer({
   storage,
+  limits: { fileSize: 15 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     if (!allowedMimeTypes.includes(file.mimetype)) {
       return cb(new Error("Formato no soportado"));
@@ -35,8 +37,29 @@ const upload = multer({
   }
 });
 
-function buildInvoiceCode(id) {
-  return `INV-${new Date().getFullYear()}-${String(id).slice(-6).toUpperCase()}`;
+function buildInvoiceCode(seed) {
+  const safe = String(seed || "")
+    .replace(/[^A-Za-z0-9/-]/g, "")
+    .slice(0, 24)
+    .toUpperCase();
+
+  if (safe.length >= 4) {
+    return safe;
+  }
+
+  return `INV-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
+}
+
+async function uniqueInvoiceCode(seed) {
+  let code = buildInvoiceCode(seed);
+  let suffix = 1;
+
+  while (await prisma.invoice.findUnique({ where: { code } })) {
+    code = `${buildInvoiceCode(seed)}-${suffix}`;
+    suffix += 1;
+  }
+
+  return code;
 }
 
 function toInvoiceResponse(invoice) {
@@ -56,6 +79,9 @@ function toInvoiceResponse(invoice) {
     storageProvider: invoice.storageProvider,
     uploadedAt: invoice.uploadedAt,
     ocrAverageConfidence: invoice.ocrAverageConfidence,
+    ocrEngine: invoice.ocrEngine,
+    ocrRawText: invoice.ocrRawText,
+    pageCount: invoice.pageCount,
     ownerId: invoice.ownerId,
     fields: invoice.fields
   };
@@ -106,35 +132,118 @@ invoiceRouter.get("/:id", async (req, res) => {
   return res.json(toInvoiceResponse(invoice));
 });
 
+invoiceRouter.get("/:id/file", async (req, res) => {
+  const invoice = await prisma.invoice.findUnique({ where: { id: req.params.id } });
+
+  if (!invoice) {
+    return res.status(404).json({ message: "Factura no encontrada" });
+  }
+
+  const diskPath = resolveStoredFile(invoice.filePath);
+
+  if (!fs.existsSync(diskPath)) {
+    return res.status(404).json({ message: "El archivo original no esta disponible" });
+  }
+
+  res.setHeader("Content-Type", invoice.mimeType || "application/octet-stream");
+  res.setHeader("Content-Disposition", `inline; filename="${encodeURIComponent(invoice.fileName)}"`);
+  return fs.createReadStream(diskPath).pipe(res);
+});
+
+invoiceRouter.get("/:id/chunks", async (req, res) => {
+  const invoice = await prisma.invoice.findUnique({
+    where: { id: req.params.id },
+    include: {
+      chunks: {
+        orderBy: { page: "asc" }
+      }
+    }
+  });
+
+  if (!invoice) {
+    return res.status(404).json({ message: "Factura no encontrada" });
+  }
+
+  return res.json(
+    invoice.chunks.map((chunk) => ({
+      id: chunk.id,
+      invoiceId: invoice.id,
+      invoiceCode: invoice.code,
+      page: chunk.page,
+      section: chunk.section,
+      text: chunk.text,
+      chunkSource: chunk.chunkSource,
+      citation: `[Factura ${invoice.code}, pág. ${chunk.page}]`
+    }))
+  );
+});
+
 invoiceRouter.post("/upload", upload.single("file"), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ message: "Archivo requerido" });
   }
 
-  const ocr = simulateOcr(req.file.originalname);
+  let ocr;
+
+  try {
+    ocr = await processInvoiceDocument({
+      filePath: req.file.path,
+      mimeType: req.file.mimetype
+    });
+  } catch (error) {
+    console.error("OCR failed", error);
+    ocr = {
+      supplier: "No identificado",
+      taxId: "No detectado",
+      issueDate: new Date().toISOString().slice(0, 10),
+      subtotal: 0,
+      vat: 0,
+      total: 0,
+      documentNumber: null,
+      fields: [
+        { label: "Proveedor", value: "No identificado", confidence: 0.2 },
+        { label: "NIT", value: "No detectado", confidence: 0.2 },
+        { label: "Fecha", value: new Date().toISOString().slice(0, 10), confidence: 0.2 },
+        { label: "Subtotal", value: "0.00", confidence: 0.2 },
+        { label: "IVA", value: "0.00", confidence: 0.2 },
+        { label: "Total", value: "0.00", confidence: 0.2 }
+      ],
+      averageConfidence: 0.15,
+      status: "ERROR",
+      ocrEngine: "error",
+      ocrRawText: "",
+      pageCount: 1,
+      pages: []
+    };
+  }
 
   const created = await prisma.invoice.create({
     data: {
-      code: buildInvoiceCode(`${Date.now()}`),
+      code: await uniqueInvoiceCode(ocr.documentNumber || `${Date.now()}`),
       supplier: ocr.supplier,
       taxId: ocr.taxId,
       issueDate: new Date(ocr.issueDate),
       subtotal: ocr.subtotal,
       vat: ocr.vat,
       total: ocr.total,
-      status: ocr.averageConfidence < 0.82 ? "ERROR" : "PROCESSED",
+      status: ocr.status,
       fileName: req.file.originalname,
       filePath: `/uploads/${req.file.filename}`,
       mimeType: req.file.mimetype,
-      storageProvider: "SIMULATED_S3",
+      storageProvider: "LOCAL",
       ownerId: req.user.id,
       ocrAverageConfidence: ocr.averageConfidence,
+      ocrEngine: ocr.ocrEngine,
+      ocrRawText: ocr.ocrRawText,
+      pageCount: ocr.pageCount,
       fields: {
         create: ocr.fields
       }
     },
     include: { fields: true }
   });
+
+  await indexInvoiceChunks(created.id, ocr.pages);
 
   await createAuditLog({
     action: "UPLOAD",
@@ -144,7 +253,9 @@ invoiceRouter.post("/upload", upload.single("file"), async (req, res) => {
     ipAddress: getClientIp(req),
     metadata: {
       fileName: req.file.originalname,
-      storageProvider: "SIMULATED_S3"
+      storageProvider: "LOCAL",
+      ocrEngine: created.ocrEngine,
+      pageCount: created.pageCount
     }
   });
 
@@ -177,6 +288,9 @@ invoiceRouter.put("/:id", async (req, res) => {
           Math.max((fields || []).length, 1)
         ).toFixed(2)
       ),
+      ocrEngine: existing.ocrEngine,
+      ocrRawText: existing.ocrRawText,
+      pageCount: existing.pageCount,
       fields: {
         create: (fields || []).map((field) => ({
           label: field.label,
@@ -187,6 +301,8 @@ invoiceRouter.put("/:id", async (req, res) => {
     },
     include: { fields: true }
   });
+
+  await indexInvoiceChunks(updated.id);
 
   await createAuditLog({
     action: "EDIT",
@@ -207,7 +323,7 @@ invoiceRouter.delete("/:id", async (req, res) => {
     return res.status(404).json({ message: "Factura no encontrada" });
   }
 
-  const diskPath = path.resolve("apps/backend", invoice.filePath.replace(/^\//, ""));
+  const diskPath = resolveStoredFile(invoice.filePath);
 
   if (fs.existsSync(diskPath)) {
     fs.unlinkSync(diskPath);

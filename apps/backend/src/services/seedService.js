@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import { prisma } from "../config/prisma.js";
+import { indexInvoiceChunks } from "./chunkIndexService.js";
 
 async function buildPasswordHashes() {
   return {
@@ -11,6 +12,7 @@ async function buildPasswordHashes() {
 
 export async function seedDatabase({ reset = false } = {}) {
   if (reset) {
+    await prisma.invoiceChunk.deleteMany();
     await prisma.invoiceField.deleteMany();
     await prisma.invoice.deleteMany();
     await prisma.auditLog.deleteMany();
@@ -98,7 +100,7 @@ export async function seedDatabase({ reset = false } = {}) {
   ];
 
   for (const invoice of invoices) {
-    await prisma.invoice.create({
+    const created = await prisma.invoice.create({
       data: {
         ...invoice,
         ownerId: admin.id,
@@ -114,6 +116,8 @@ export async function seedDatabase({ reset = false } = {}) {
         }
       }
     });
+
+    await indexInvoiceChunks(created.id);
   }
 
   await prisma.auditLog.createMany({
