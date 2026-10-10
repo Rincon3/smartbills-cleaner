@@ -1,4 +1,37 @@
-const VECTOR_SIZE = 96;
+export const VECTOR_SIZE = 96;
+export const EMBEDDING_MODEL = "hashed-bow-96-v2";
+
+const EMBEDDING_STOPWORDS = new Set([
+  "el",
+  "la",
+  "los",
+  "las",
+  "de",
+  "del",
+  "y",
+  "o",
+  "en",
+  "con",
+  "por",
+  "para",
+  "un",
+  "una",
+  "al",
+  "se",
+  "su",
+  "sus",
+  "es",
+  "son",
+  "que",
+  "cual",
+  "cuanto",
+  "como",
+  "hay",
+  "alguna",
+  "factura",
+  "pag",
+  "pague"
+]);
 
 function hashToken(token) {
   let hash = 2166136261;
@@ -11,19 +44,25 @@ function hashToken(token) {
   return Math.abs(hash);
 }
 
-export function tokenize(text) {
-  return String(text || "")
+export function tokenize(text, { dropStopwords = false } = {}) {
+  const tokens = String(text || "")
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9.$]+/g, " ")
     .split(/\s+/)
     .filter((token) => token.length > 1);
+
+  if (!dropStopwords) {
+    return tokens;
+  }
+
+  return tokens.filter((token) => !EMBEDDING_STOPWORDS.has(token));
 }
 
 export function embedText(text) {
   const vector = Array.from({ length: VECTOR_SIZE }, () => 0);
-  const tokens = tokenize(text);
+  const tokens = tokenize(text, { dropStopwords: true });
 
   tokens.forEach((token, index) => {
     vector[hashToken(token) % VECTOR_SIZE] += 1.2;

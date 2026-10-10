@@ -1,7 +1,8 @@
 import { prisma } from "../config/prisma.js";
-import { embedText } from "../utils/embeddings.js";
+import { EMBEDDING_MODEL, VECTOR_SIZE, embedText } from "../utils/embeddings.js";
 import { buildChunkSource, buildInvoicePages } from "./invoiceDocument.js";
 import { parseOcrPages } from "./ocr/ocrEngine.js";
+import { replaceInvoiceChunks } from "./vectorStore.js";
 
 function toIndexPages(invoice, pageTexts) {
   if (pageTexts?.length) {
@@ -33,24 +34,20 @@ export async function indexInvoiceChunks(invoiceId, pageTexts = null) {
   const pages = toIndexPages(invoice, pageTexts).filter((page) => page.text?.trim());
   const payload = pages.length ? pages : buildInvoicePages(invoice);
 
-  await prisma.invoiceChunk.deleteMany({ where: { invoiceId: invoice.id } });
-
-  const created = await prisma.$transaction(
-    payload.map((page) =>
-      prisma.invoiceChunk.create({
-        data: {
-          invoiceId: invoice.id,
-          page: page.page,
-          section: page.section,
-          text: page.text,
-          chunkSource: buildChunkSource(invoice.id, page.page),
-          embedding: embedText(`${invoice.code} ${page.section} ${page.text}`)
-        }
-      })
-    )
+  return replaceInvoiceChunks(
+    invoice.id,
+    payload.map((page) => ({
+      page: page.page,
+      section: page.section,
+      text: page.text,
+      chunkSource: buildChunkSource(invoice.id, page.page),
+      embedding: embedText(
+        `${invoice.code} ${invoice.supplier} ${invoice.taxId} ${page.section} ${page.text}`
+      ),
+      embeddingModel: EMBEDDING_MODEL,
+      embeddingDim: VECTOR_SIZE
+    }))
   );
-
-  return created;
 }
 
 export async function ensureInvoiceChunksIndexed() {
@@ -62,8 +59,14 @@ export async function ensureInvoiceChunksIndexed() {
     const count = await prisma.invoiceChunk.count({
       where: { invoiceId: invoice.id }
     });
+    const stale = await prisma.invoiceChunk.count({
+      where: {
+        invoiceId: invoice.id,
+        embeddingModel: { not: EMBEDDING_MODEL }
+      }
+    });
 
-    if (count === 0) {
+    if (count === 0 || stale > 0) {
       await indexInvoiceChunks(invoice.id);
     }
   }

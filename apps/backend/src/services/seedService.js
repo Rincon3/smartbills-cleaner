@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import { prisma } from "../config/prisma.js";
 import { indexInvoiceChunks } from "./chunkIndexService.js";
+import { buildSemanticDemoInvoices, SEMANTIC_DEMO_CODES } from "./semanticDemoInvoices.js";
 
 async function buildPasswordHashes() {
   return {
@@ -22,6 +23,7 @@ export async function seedDatabase({ reset = false } = {}) {
   const existingUsers = await prisma.user.count();
 
   if (existingUsers > 0) {
+    await ensureSemanticDemoInvoices();
     return { skipped: true };
   }
 
@@ -129,6 +131,54 @@ export async function seedDatabase({ reset = false } = {}) {
     ]
   });
 
+  await ensureSemanticDemoInvoices(admin.id);
+
   return { skipped: false };
+}
+
+export async function ensureSemanticDemoInvoices(ownerId = null) {
+  const existing = await prisma.invoice.count({
+    where: { code: { in: SEMANTIC_DEMO_CODES } }
+  });
+
+  if (existing >= SEMANTIC_DEMO_CODES.length) {
+    return { skipped: true, count: existing };
+  }
+
+  const owner =
+    ownerId ||
+    (
+      await prisma.user.findFirst({
+        where: { role: "ADMIN" },
+        select: { id: true }
+      })
+    )?.id;
+
+  if (!owner) {
+    return { skipped: true, count: 0 };
+  }
+
+  let createdCount = 0;
+
+  for (const invoice of buildSemanticDemoInvoices()) {
+    const found = await prisma.invoice.findUnique({ where: { code: invoice.code } });
+    if (found) {
+      continue;
+    }
+
+    const { fields, ...data } = invoice;
+    const created = await prisma.invoice.create({
+      data: {
+        ...data,
+        ownerId: owner,
+        fields: { create: fields }
+      }
+    });
+
+    await indexInvoiceChunks(created.id);
+    createdCount += 1;
+  }
+
+  return { skipped: false, count: createdCount };
 }
 

@@ -88,15 +88,17 @@ model InvoiceField {
 }
 
 model InvoiceChunk {
-  id          String   @id @default(cuid())
-  invoiceId   String
-  page        Int
-  section     String
-  text        String
-  chunkSource String
-  embedding   Json
-  createdAt   DateTime @default(now())
-  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  id             String                     @id @default(cuid())
+  invoiceId      String
+  page           Int
+  section        String
+  text           String
+  chunkSource    String
+  embedding      Unsupported("vector")
+  embeddingModel String                     @default("hashed-bow-96-v2")
+  embeddingDim   Int                        @default(96)
+  createdAt      DateTime                   @default(now())
+  invoice        Invoice                    @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
   @@index([invoiceId, page])
   @@index([chunkSource])

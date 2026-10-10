@@ -8,7 +8,7 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev --name init",
     "db:seed": "prisma db seed",
-    "test": "node --test src/services/ocr src/services/invoiceDocument.test.js",
+    "test": "node --test src/services/ocr src/services/invoiceDocument.test.js src/services/vectorStore.test.js",
     "test:jira": "node scripts/jira-unit-evidence.mjs"
   },
   "prisma": {
@@ -29,4 +29,3 @@
     "prisma": "^5.16.2"
   }
 }
-
