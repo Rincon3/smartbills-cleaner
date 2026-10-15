@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SmartBills Cleaner · Informe Sprint 4 · Historias y pruebas</title>
+    <style>
+      :root {
+        --ink: #16322f;
+        --muted: #56706c;
+        --line: #d5e2df;
+        --primary: #0f8b7d;
+        --paper: #fff;
+        --bg: #f4f7f5;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+        color: var(--ink);
+        background: var(--bg);
+        line-height: 1.6;
+      }
+      .shell { width: min(920px, calc(100% - 32px)); margin: 0 auto; padding: 32px 0 64px; }
+      h1, h2, h3 { line-height: 1.2; }
+      h1 { font-size: 2rem; margin: 0 0 8px; }
+      h2 { font-size: 1.35rem; margin: 32px 0 12px; border-bottom: 2px solid var(--primary); padding-bottom: 6px; }
+      h3 { font-size: 1.08rem; margin: 20px 0 8px; }
+      p, li { color: var(--muted); }
+      .card {
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 22px 24px;
+        margin-bottom: 16px;
+      }
+      .meta { color: var(--muted); font-size: 0.92rem; }
+      table { width: 100%; border-collapse: collapse; font-size: 0.9rem; background: #fff; }
+      th, td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
+      th { background: #16322f; color: #fff; }
+      .ok { color: #176b35; font-weight: 700; }
+      code { font-size: 0.86em; background: #eef6f4; padding: 1px 5px; border-radius: 6px; }
+      pre {
+        background: #16322f;
+        color: #e8f8f4;
+        padding: 14px 16px;
+        border-radius: 12px;
+        overflow-x: auto;
+        font-size: 0.82rem;
+      }
+      .tag {
+        display: inline-block;
+        padding: 3px 8px;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        background: #dff5f1;
+        color: var(--primary);
+      }
+      @media print {
+        body { background: #fff; }
+        .card { break-inside: avoid; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <section class="card">
+        <p class="tag">Sprint 4 · Informe técnico</p>
+        <h1>Historias desarrolladas y evidencias de prueba</h1>
+        <p class="meta">
+          SmartBills Cleaner · Miguel Rincón · Octubre 2026<br />
+          Objetivo del sprint: vectorización, RAG con citas, búsqueda híbrida y OCR nube opcional
+          sin bloquear el flujo local.
+        </p>
+      </section>
+
+      <h2>1. Alcance</h2>
+      <p>
+        Este documento describe <strong>cómo se atacaron las historias Must del Sprint 4</strong>,
+        qué archivos se tocaron y <strong>qué pruebas las cubren</strong>. No sustituye a Jira:
+        los textos para actualizar tickets están en
+        <code>docs/sprint-4/jira-backlog.md</code>.
+      </p>
+      <table>
+        <thead>
+          <tr><th>ID</th><th>Historia</th><th>SP</th><th>Resultado</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>SBC-15</td><td>Vectorización y BD vectorial</td><td>5</td><td class="ok">Hecho</td></tr>
+          <tr><td>SBC-29</td><td>Implementación RAG</td><td>5</td><td class="ok">Hecho</td></tr>
+          <tr><td>SBC-30</td><td>LangChain RetrievalQA</td><td>2</td><td class="ok">Hecho (subtarea)</td></tr>
+          <tr><td>SBC-31</td><td>Prompt few-shot y citas</td><td>2</td><td class="ok">Hecho (subtarea)</td></tr>
+          <tr><td>SBC-32</td><td>Evaluación RAGAS</td><td>2</td><td class="ok">Hecho (subtarea)</td></tr>
+          <tr><td>SBC-25</td><td>Consultas RAG inteligente (filtros + ranking)</td><td>5</td><td class="ok">Hecho</td></tr>
+          <tr><td>SBC-17</td><td>Cerrar Consultas NL (DoD)</td><td>3</td><td class="ok">Hecho</td></tr>
+          <tr><td>SBC-8 (parcial)</td><td>OCR: Document AI / Textract opcionales</td><td>—</td><td>Cableado; sin claves no se llama</td></tr>
+        </tbody>
+      </table>
+
+      <h2>2. Cómo se desarrolló cada historia</h2>
+
+      <div class="card">
+        <h3>SBC-15 — Vectorización y BD vectorial</h3>
+        <p>
+          <strong>Problema:</strong> los embeddings vivían en JSON y la similitud se calculaba en memoria.
+          <strong>Decisión:</strong> PostgreSQL + extensión <code>pgvector</code>, columna
+          <code>InvoiceChunk.embedding vector(96)</code>, metadatos
+          <code>embeddingModel</code> / <code>embeddingDim</code>, índice HNSW pequeño (dataset de demo, no estrés).
+        </p>
+        <p>
+          <strong>Flujo:</strong> al crear o editar una factura,
+          <code>chunkIndexService</code> borra chunks previos y escribe vectores con SQL
+          (<code>replaceInvoiceChunks</code>). El usuario no ve un botón de “indexar”.
+        </p>
+        <p>
+          <strong>Datos de prueba:</strong> seed <code>DEMO-VEC-01</code> a <code>06</code>
+          (acueducto, Claro, papelería, Terpel, Enel, Microsoft), 2 páginas c/u, más facturas ya cargadas.
+          Modelo real: <code>hashed-bow-96-v2</code> (no SBERT).
+        </p>
+        <p><strong>Archivos:</strong>
+          migración <code>202610080001_pgvector_embeddings</code>,
+          <code>vectorStore.js</code>, <code>chunkIndexService.js</code>,
+          <code>semanticDemoInvoices.js</code>, imagen Docker <code>pgvector/pgvector:pg15</code>.
+        </p>
+      </div>
+
+      <div class="card">
+        <h3>SBC-29 / 30 / 31 / 32 — RAG</h3>
+        <p>
+          <strong>SBC-30:</strong> retriever LangChain sobre pgvector + cadena
+          <code>RunnableSequence</code> (equivalente RetrievalQA en LangChain 1).
+          Top-K = 5.
+        </p>
+        <p>
+          <strong>SBC-31:</strong> prompt en español, formato de cita obligatorio, 3 few-shots
+          (NIT, total, “no hay evidencia”).
+        </p>
+        <p>
+          <strong>Consenso:</strong> modelo base vs ajustado (Bedrock Nova Lite/Pro si hay AWS;
+          si no, respuesta local corta vs un poco más amplia). Gana la más fiel a las citas recuperadas.
+          Si la API falla o no hay clave, <strong>no se rompe la consulta</strong>.
+        </p>
+        <p>
+          <strong>SBC-32:</strong> métricas tipo RAGAS en Node (fidelity, context precision/recall,
+          answer relevancy) y script <code>npm run eval:ragas</code> sobre 5 casos DEMO.
+          Última corrida documentada: promedio RAGAS ≈ <strong>0.69</strong>, fidelidad <strong>1.0</strong>
+          (sin Bedrock; generador local).
+        </p>
+        <p><strong>Archivos:</strong>
+          <code>services/rag/*</code>, <code>queryService.js</code>,
+          <code>scripts/ragas-eval.mjs</code>.
+        </p>
+      </div>
+
+      <div class="card">
+        <h3>SBC-25 — Búsqueda híbrida</h3>
+        <p>
+          <strong>Criterios:</strong> texto + proveedor + fechas + rango de montos; SQL primero;
+          ranking semántico; UI avanzada; objetivo &lt; 4 s.
+        </p>
+        <p>
+          <strong>Diseño:</strong>
+          <code>parseSearchFilters</code> → <code>prisma.invoice.findMany</code> (WHERE) →
+          si hay <code>q</code>, <code>searchSimilarChunks</code> solo sobre esos IDs →
+          colapsar chunks a facturas por máximo score.
+        </p>
+        <p>
+          <strong>API:</strong> <code>GET /api/invoices/search</code> (registrada antes de <code>/:id</code>).
+          Respuesta: listado + <code>elapsedMs</code> + <code>mode</code> (<code>sql</code> o <code>sql+pgvector</code>)
+          + <code>withinSla</code>.
+        </p>
+        <p>
+          <strong>UI:</strong> componente <code>AdvancedSearchForm</code> en Facturas (y filtros reutilizados en Consultas).
+        </p>
+      </div>
+
+      <div class="card">
+        <h3>SBC-17 — DoD de Consultas NL</h3>
+        <p>
+          La pantalla ya existía; se cerró el DoD: citas clicables al fragmento
+          (<code>chunk_source</code>), panel <strong>Sin evidencia verificable</strong>,
+          bloque <strong>Fragmentos Top-5</strong> siempre visible (N de 5), latencia en ms y marca “dentro de 4 s”.
+          Pregunta de control: arriendo en Madrid → sin evidencia (no inventa una factura).
+        </p>
+        <p><strong>Archivos:</strong> <code>ConsultPage.jsx</code>, <code>queryService.js</code> (<code>noEvidence</code>, <code>elapsedMs</code>).</p>
+      </div>
+
+      <div class="card">
+        <h3>SBC-8 (parcial) — OCR nube opcional</h3>
+        <p>
+          Camino feliz sigue siendo local. Si el PDF no tiene texto suficiente:
+          Document AI (si hay proyecto + processor + cuenta) → Textract (si hay keys AWS) → Tesseract.
+          <strong>Sin claves o si la API falla, se omite el ramal y el upload continúa.</strong>
+          No hay SQS. Orden configurable: <code>OCR_CLOUD_ORDER=documentai,textract</code>.
+        </p>
+        <p><strong>Archivos:</strong> <code>ocr/cloudOcr.js</code>, <code>ocrEngine.js</code>.</p>
+      </div>
+
+      <h2>3. Pruebas unitarias</h2>
+      <p>
+        Comando: <code>npm test --workspace backend</code><br />
+        Runtime documentado: Node (suite <code>node:test</code>).<br />
+        Última ejecución en desarrollo: <strong>24/24 PASS</strong>.
+      </p>
+      <table>
+        <thead>
+          <tr><th>Archivo</th><th>Casos (qué comprueban)</th><th>Historias</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>vectorStore.test.js</code></td>
+            <td>Literal pgvector 96-d; energía vs papelería más similar; score híbrido</td>
+            <td>SBC-15</td>
+          </tr>
+          <tr>
+            <td><code>invoiceSearchService.test.js</code></td>
+            <td>Parseo de filtros (proveedor, fechas, montos); orden por score semántico</td>
+            <td>SBC-25</td>
+          </tr>
+          <tr>
+            <td><code>rag/prompt.test.js</code></td>
+            <td>Top-K=5, español, formato de cita, few-shot, caso “no evidencia”</td>
+            <td>SBC-31</td>
+          </tr>
+          <tr>
+            <td><code>rag/consensus.test.js</code></td>
+            <td>Elige la respuesta con citas válidas frente a una cita inventada</td>
+            <td>SBC-29</td>
+          </tr>
+          <tr>
+            <td><code>rag/ragasMetrics.test.js</code></td>
+            <td>Faithfulness 1.0, precision/recall, ragas &gt; 0.5 sobre un caso Enel</td>
+            <td>SBC-32</td>
+          </tr>
+          <tr>
+            <td><code>ocr/cloudOcr.test.js</code></td>
+            <td>Sin claves no activa nubes; tryCloudOcr no lanza; parseo Document AI y Textract</td>
+            <td>SBC-8</td>
+          </tr>
+          <tr>
+            <td><code>ocr/*.test.js</code> + <code>invoiceDocument.test.js</code></td>
+            <td>PDF muestra, NIT/totales, chunk_source y citas (regresión Sprint 3)</td>
+            <td>SBC-3/8/23</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>Evidencia HTML/JSON para Jira: <code>npm run test:jira</code> → <code>docs/evidencia-jira/</code>.</p>
+
+      <h2>4. Evaluación RAGAS (SBC-32)</h2>
+      <p>Comando: <code>npm run eval:ragas</code> (requiere PostgreSQL con seed DEMO-VEC).</p>
+      <table>
+        <thead>
+          <tr><th>Caso</th><th>Pregunta</th><th>Qué se espera</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>enel-energia</td><td>Cuánto pagué de energía con Enel?</td><td>DEMO-VEC-05</td></tr>
+          <tr><td>aguas-nit</td><td>NIT de Aguas de la Sabana</td><td>DEMO-VEC-01 o facturas reales cargadas</td></tr>
+          <tr><td>papeleria</td><td>¿Hay factura de papelería?</td><td>DEMO-VEC-03</td></tr>
+          <tr><td>claro-plan</td><td>Costo del plan Claro</td><td>DEMO-VEC-02</td></tr>
+          <tr><td>sin-evidencia</td><td>Arriendo en Madrid</td><td>No inventar documento</td></tr>
+        </tbody>
+      </table>
+      <p>
+        Métricas: faithfulness, context_precision, context_recall, answer_relevancy, promedio <code>ragas</code>.
+        Implementación local (no el paquete Python RAGAS con LLM-juez), suficiente para el MVP y repetible sin costo.
+      </p>
+
+      <h2>5. Cómo volver a ejecutar las pruebas</h2>
+      <pre>npm test --workspace backend
+npm run test:jira --workspace backend
+npm run eval:ragas --workspace backend</pre>
+      <p>
+        Login de demo: <code>admin@smartbills.local</code> / <code>Admin123!</code>.
+        UI: Facturas (búsqueda avanzada) y Consultas (pregunta + Top-5).
+        Docker: <code>pgvector/pgvector:pg15</code>, API en puerto 4000.
+      </p>
+      <p class="meta">
+        Relacionado: presentación <code>docs/presentacion/index.html</code> (retro, BPMN, backlog Jira)
+        · fichas <code>docs/sprint-4/jira-backlog.md</code>
+      </p>
+    </main>
+  </body>
+</html>

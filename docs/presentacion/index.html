@@ -132,18 +132,17 @@
   <body>
     <main class="shell">
       <section class="hero">
-        <span class="eyebrow">SmartBills Cleaner · Ceremonias ágiles · Sprint 3 → Sprint 4</span>
-        <h1>Review, retrospectiva, planning y actualización de artefactos</h1>
+        <span class="eyebrow">SmartBills Cleaner · Ceremonias ágiles · Sprint 4</span>
+        <h1>Review, retrospectiva, backlog Jira y BPMN actualizado</h1>
         <p>
-          Automatización de lectura y clasificación de facturas con OCR e IA.
-          Este deck cierra el Sprint 3 (ingesta, OCR real, CRUD y citas) y abre el Sprint 4
-          (vectorización y RAG). Responsable único: Miguel Rincón, con roles Scrum simulados
-          (PO / SM / Developer) en momentos separados.
+          Automatización de lectura y consulta de facturas con OCR, pgvector y RAG.
+          Este deck cierra el Sprint 4 (vectorización, RAG, búsqueda híbrida y OCR nube opcional).
+          Responsable único: Miguel Rincón. Jira se actualiza a mano con las fichas de la sección 9.
         </p>
         <div class="hero-grid">
-          <article class="metric"><strong>Sprint 2 · 5/5</strong><span>Auth, roles, admin, reportes y correo cerrados.</span></article>
-          <article class="metric"><strong>Sprint 3 · evidencia</strong><span>OCR real + CRUD + tablero Jira 13/37 Done.</span></article>
-          <article class="metric"><strong>Sprint 4 · planning</strong><span>Vectorización, RAG y cadena de repliegue.</span></article>
+          <article class="metric"><strong>Sprint 3</strong><span>OCR real, CRUD, citas y 12/12 unitarias.</span></article>
+          <article class="metric"><strong>Sprint 4 · entregado</strong><span>pgvector, RAG Top-5, SBC-25/17, OCR cloud opcional.</span></article>
+          <article class="metric"><strong>Jira</strong><span>Especificaciones listas para editar estados y SP.</span></article>
         </div>
       </section>
 
@@ -155,6 +154,8 @@
         <a href="#s5">5. Arquitectura</a>
         <a href="#s6">6. Release Plan</a>
         <a href="#s7">7. BPMN</a>
+        <a href="#s8">8. Retro S4</a>
+        <a href="#s9">9. Backlog Jira</a>
       </nav>
 
       <!-- 1 REVIEW -->
@@ -350,10 +351,10 @@
             <tr><td>Backend</td><td>API REST</td><td>Node 20 + Express 4 + ESM</td><td class="ok">Sin cambio de enfoque.</td></tr>
             <tr><td>Datos</td><td>PostgreSQL</td><td>PostgreSQL 15 + Prisma 5</td><td class="ok">Alineado.</td></tr>
             <tr><td>Auth</td><td>JWT access + refresh, bcrypt 12</td><td>JWT único 12 h, bcrypt 10, roles ADMIN/ANALYST/VIEWER</td><td class="warn">Refresh y rate-limit pendientes.</td></tr>
-            <tr><td>OCR</td><td>AWS Textract + Tesseract fallback + SQS</td><td>pdftotext / pdf.js / Tesseract spa+eng. Optional OpenAI JSON</td><td class="warn">Textract y SQS no activos.</td></tr>
+            <tr><td>OCR</td><td>AWS Textract + Tesseract + SQS</td><td>pdftotext → Document AI (opc.) → Textract (opc.) → Tesseract. Sin SQS. Si no hay claves, no falla.</td><td class="warn">Nube opcional; SQS no.</td></tr>
             <tr><td>Storage</td><td>S3</td><td>Disco local uploads/ (storageProvider LOCAL)</td><td class="warn">S3 aplazado a Release 3.</td></tr>
-            <tr><td>Vectorial</td><td>BD vectorial / SBERT</td><td>InvoiceChunk.embedding JSON 96-d + cosine local</td><td class="warn">pgvector/SBERT en Sprint 4.</td></tr>
-            <tr><td>LLM</td><td>Consultas NL con fuentes</td><td>gpt-4o-mini si hay API key; si no, respuesta grounded local</td><td class="ok">Repliegue implementado.</td></tr>
+            <tr><td>Vectorial</td><td>BD vectorial / SBERT</td><td>pgvector vector(96) hashed-bow-96-v2 + HNSW</td><td class="ok">SBC-15 hecho. No es SBERT.</td></tr>
+            <tr><td>LLM / RAG</td><td>Consultas NL + Bedrock</td><td>LangChain RetrievalQA Top-5; Bedrock/OpenAI si hay clave; si no, grounded local</td><td class="ok">SBC-29/17/25.</td></tr>
             <tr><td>Runtime</td><td>—</td><td>Docker Compose: postgres, backend, frontend, pgAdmin</td><td class="ok">Nuevo respecto a Semestre 1.</td></tr>
           </tbody>
         </table>
@@ -425,10 +426,56 @@ flowchart LR
             <div class="tag danger">7. Actualización del BPMN / mapa de proceso</div>
             <h2 class="slide-title">El diagrama de capas del Semestre 1, actualizado al flujo real</h2>
           </div>
-          <div class="note">Se conserva la estructura de cuatro capas. Se corrige tecnología y se añaden validación humana, repliegue OCR y citas.</div>
+          <div class="note">BPMN del proceso de negocio actual. Si Document AI o Textract no responden, el flujo sigue por Tesseract.</div>
         </div>
 
-        <h3 style="margin:0 0 10px;">Propuesta original (Semestre 1)</h3>
+        <h3 style="margin:0 0 10px;">BPMN · ingesta, validación y consulta</h3>
+        <div class="mermaid">
+flowchart TB
+  start((Inicio)) --> login[Login JWT]
+  login --> act{¿Qué quiere hacer?}
+  act -->|Cargar factura| upload[Sube PDF o imagen]
+  act -->|Buscar documentos| search[Búsqueda avanzada]
+  act -->|Preguntar| ask[Pregunta en lenguaje natural]
+  act -->|Eliminar| delAsk[Confirma eliminación]
+
+  upload --> native{¿PDF con texto nativo?}
+  native -->|Sí| pdftext[pdftotext / pdf.js]
+  native -->|No o texto pobre| cloud1{¿Document AI configurado?}
+  pdftext --> rich{¿Texto suficiente?}
+  rich -->|Sí| fields
+  rich -->|No| cloud1
+  cloud1 -->|Sí y responde| gdoc[Google Document AI]
+  cloud1 -->|No clave / error| cloud2{¿Textract configurado?}
+  gdoc --> fields[Extraer NIT, montos, fecha]
+  cloud2 -->|Sí y responde| tex[AWS Textract]
+  cloud2 -->|No clave / error| tess[Tesseract spa+eng]
+  tex --> fields
+  tess --> fields
+  fields --> human[Usuario valida o corrige campos]
+  human --> index[Indexar chunks en pgvector]
+  index --> endOk([Factura en repositorio])
+
+  search --> sql[Filtros SQL: proveedor, fechas, montos]
+  sql --> vec{¿Hay texto de consulta?}
+  vec -->|Sí| rank[ORDER BY similitud pgvector]
+  vec -->|No| list[Listado por fecha]
+  rank --> list
+  list --> endOk
+
+  ask --> sql2[Opcional: mismos filtros SQL]
+  sql2 --> rag[RAG Top-5 + consenso de modelos]
+  rag --> cite{¿Hay evidencia?}
+  cite -->|Sí| ans[Respuesta ES con cita clicable]
+  cite -->|No| none[Sin evidencia verificable]
+  ans --> frag[Usuario abre fragmento original]
+  none --> endOk
+  frag --> endOk
+  delAsk --> audit[DELETE físico + AuditLog]
+  audit --> endOk
+        </div>
+
+        <h3 style="margin:22px 0 10px;">Propuesta original (Semestre 1)</h3>
         <figure>
           <img class="shot" src="img/arquitectura-semestre1.jpg" alt="Diagrama de capas Semestre 1: presentación, Django REST, Textract, Bedrock, BD vectorial y relacional" />
           <figcaption>Figura. Mapa de proceso/arquitectura planteado: UI → Django REST → Textract + Bedrock → BD vectorial y relacional.</figcaption>
@@ -453,7 +500,7 @@ flowchart LR
           <div class="boxes">
             <div class="box">Auth y roles<small>/api/auth · ADMIN / ANALYST / VIEWER</small></div>
             <div class="box">Orquestador de facturas<small>upload → OCR → indexar</small></div>
-            <div class="box">Control de flujo OCR<small>nativo / Tesseract</small></div>
+            <div class="box">Control de flujo OCR<small>nativo → Document AI/Textract opc. → Tesseract</small></div>
             <div class="box">CRUD + auditoría<small>GET, PUT, DELETE + AuditLog</small></div>
             <div class="box">Consulta usuario<small>/api/query pregunta + fuentes</small></div>
           </div>
@@ -461,17 +508,17 @@ flowchart LR
         <div class="layer ia">
           <h3>3. Capa de inteligencia · local + LLM opcional (antes Textract / Bedrock fijos)</h3>
           <div class="boxes">
-            <div class="box">OCR<small>pdftotext / pdf.js → Tesseract</small></div>
+            <div class="box">OCR<small>pdftotext → Document AI/Textract opc. → Tesseract</small></div>
             <div class="box">Extracción de campos<small>Reglas COP/NIT + OpenAI JSON</small></div>
-            <div class="box">Vectorización / embeddings<small>Chunks por página · 96-d local</small></div>
-            <div class="box">Generación<small>gpt-4o-mini o respuesta grounded</small></div>
+            <div class="box">Vectorización / embeddings<small>pgvector 96-d hashed-bow</small></div>
+            <div class="box">Generación RAG<small>LangChain Top-5 · Bedrock opcional</small></div>
           </div>
         </div>
         <div class="layer datos">
           <h3>4. Capa de datos · PostgreSQL 15 + Prisma</h3>
           <div class="boxes">
             <div class="box">Relacional<small>User, Invoice, InvoiceField, AuditLog</small></div>
-            <div class="box">Índice documental<small>InvoiceChunk + embedding JSON</small></div>
+            <div class="box">Índice documental<small>InvoiceChunk + pgvector HNSW</small></div>
             <div class="box">Archivos<small>uploads/ local (S3 en R3)</small></div>
           </div>
         </div>
@@ -487,12 +534,12 @@ flowchart LR
             <tr>
               <td>2</td>
               <td>OCR solo como AWS Textract, sin rama de calidad baja.</td>
-              <td>Gateway: si hay texto nativo se usa pdftotext/pdf.js; si no, Tesseract. Textract queda repliegue futuro, no el camino feliz.</td>
+              <td>Gateway: texto nativo → Document AI si hay clave → Textract si hay clave → Tesseract. Sin claves o si la API falla, el proceso no se detiene.</td>
             </tr>
             <tr>
               <td>3</td>
               <td>LLM fijo en AWS Bedrock; vector DB aparte de la relacional.</td>
-              <td>OpenAI opcional + respuesta local si no hay clave. Embeddings viven en PostgreSQL (InvoiceChunk) hasta pgvector.</td>
+              <td>LangChain RAG + Bedrock/OpenAI opcionales. Embeddings en PostgreSQL/pgvector. Búsqueda: SQL primero, luego ranking semántico.</td>
             </tr>
             <tr>
               <td>4</td>
@@ -503,9 +550,85 @@ flowchart LR
         </table>
       </section>
 
+      <section class="slide" id="s8">
+        <div class="slide-header">
+          <div>
+            <div class="tag secondary">8. Sprint retrospective · Sprint 4</div>
+            <h2 class="slide-title">Qué funcionó, qué corregir y acciones para Jira</h2>
+          </div>
+          <div class="note">Capacidad 1 persona. Objetivo RAG + vectores. APIs nube nunca bloquean el MVP.</div>
+        </div>
+        <div class="grid-3">
+          <article class="card">
+            <div class="tag success">Qué funcionó</div>
+            <ul>
+              <li>pgvector sustituyó el JSON 96-d y habilitó ORDER BY semántico (SBC-15, SBC-25).</li>
+              <li>RAG LangChain Top-5 + few-shot + citas clicables (SBC-29, 17).</li>
+              <li>Eval RAGAS local (~0.69) sin depender de un LLM juez.</li>
+              <li>Si no hay Document AI, Textract, Bedrock u OpenAI, el flujo sigue (Tesseract / respuesta local).</li>
+              <li>Seed DEMO-VEC ligero permitió probar consultas sin estresar el sistema.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <div class="tag danger">Qué hubo que corregir</div>
+            <ul>
+              <li>El hash 96-d colisionaba (Enel vs Aguas); se filtró stopwords y umbral de evidencia.</li>
+              <li>Jira aún muestra Textract/SQS/Next.js como si fueran el camino feliz.</li>
+              <li>Embeddings hashed-bow ≠ SBERT: no afirmar “modelo de mercado”.</li>
+              <li>Docker a veces apagado: no se midió p95 UI en navegador en todos los cortes.</li>
+              <li>SBC-7 (soft-delete) y SBC-47 (análisis COP) no entraron en capacidad.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <div class="tag accent">Acciones acordadas</div>
+            <ul>
+              <li>Editar Jira con las fichas de la sección 9 (Done 15, 29, 25, 17, 23, 24).</li>
+              <li>SBC-8: comentar “nube opcional, default local”; SQS Won’t S4.</li>
+              <li>Siguiente Should: SBC-53 documentación corta; luego SBC-47.</li>
+              <li>No encadenar Document AI y Textract en el mismo upload.</li>
+              <li>Mantener Tesseract como repliegue obligatorio.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section class="slide" id="s9">
+        <div class="slide-header">
+          <div>
+            <div class="tag accent">9. Product Backlog actualizado · para editar en Jira</div>
+            <h2 class="slide-title">Prioridad, SP y texto listo para pegar. Jira no se tocó desde el código.</h2>
+          </div>
+          <div class="note">Detalle completo: <code>docs/sprint-4/jira-backlog.md</code></div>
+        </div>
+        <table>
+          <thead>
+            <tr><th>Prio</th><th>ID</th><th>Qué pegar / editar en Jira</th><th>SP</th><th>Estado sugerido</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Must</td><td>SBC-15</td><td>pgvector vector(96) + metadatos; indexación al subir. Quitar “evaluar pgvector”.</td><td>5</td><td class="ok">Done</td></tr>
+            <tr><td>Must</td><td>SBC-29</td><td>RAG LangChain Top-5, consenso, repliegue local. Incluye 30, 31, 32.</td><td>5</td><td class="ok">Done</td></tr>
+            <tr><td>Must</td><td>SBC-30</td><td>Subtarea: RetrievalQA / retriever pgvector.</td><td>2</td><td class="ok">Done</td></tr>
+            <tr><td>Must</td><td>SBC-31</td><td>Subtarea: prompt few-shot y citas.</td><td>2</td><td class="ok">Done</td></tr>
+            <tr><td>Must</td><td>SBC-32</td><td>Subtarea: métricas RAGAS + npm run eval:ragas.</td><td>2</td><td class="ok">Done</td></tr>
+            <tr><td>Must</td><td>SBC-25</td><td>Búsqueda híbrida: SQL + pgvector; UI avanzada; &lt; 4 s.</td><td>5</td><td class="ok">Done</td></tr>
+            <tr><td>Must</td><td>SBC-17</td><td>Consultas NL: cita clicable, vacío sin evidencia, Top-5, &lt; 4 s.</td><td>3</td><td class="ok">Done</td></tr>
+            <tr><td>Must</td><td>SBC-23/24</td><td>chunk_source y sanitizar citas. Cerrar con captura de Consultas.</td><td>2+3</td><td class="ok">Done</td></tr>
+            <tr><td>Should</td><td>SBC-8</td><td>Actualizar: default local; Document AI/Textract opcionales; SQS no.</td><td>—</td><td class="warn">Comentario / parcial</td></tr>
+            <tr><td>Should</td><td>SBC-53</td><td>Documentar stack real S4 (1–2 págs).</td><td>2</td><td>To Do</td></tr>
+            <tr><td>Should</td><td>SBC-47</td><td>Dashboard COP y gráficos reales.</td><td>5</td><td>To Do · S5</td></tr>
+            <tr><td>Could</td><td>SBC-7</td><td>Soft-delete + auditoría.</td><td>3</td><td>To Do · S5</td></tr>
+            <tr><td>Won’t S4</td><td>SBC-43</td><td>Reescribir criterios de obligaciones de tránsito antes de estimar en firme.</td><td>8</td><td>Backlog R3</td></tr>
+          </tbody>
+        </table>
+        <div class="highlight">
+          En Jira: pasar a Done las Must S4; no crear trabajo nuevo de Textract como camino feliz.
+          Copiar historias y criterios desde <a href="../sprint-4/jira-backlog.md">docs/sprint-4/jira-backlog.md</a>.
+        </div>
+      </section>
+
       <p class="footer">
-        SmartBills Cleaner · Presentación de ceremonias Sprint 3→4 · Evidencia 18 sep 2026 ·
-        Abrir este archivo desde <code>docs/presentacion/index.html</code>
+        SmartBills Cleaner · Ceremonias Sprint 4 · Retro, backlog Jira y BPMN ·
+        Abrir <code>docs/presentacion/index.html</code>
       </p>
     </main>
   </body>
