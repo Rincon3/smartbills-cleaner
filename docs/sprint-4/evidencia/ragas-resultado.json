@@ -1,0 +1,101 @@
+{
+  "average": {
+    "faithfulness": 1,
+    "context_precision": 0.44,
+    "context_recall": 1,
+    "answer_relevancy": 0.3131,
+    "ragas": 0.6883
+  },
+  "cases": [
+    {
+      "id": "enel-energia",
+      "question": "Cuanto pague de energia electrica con Enel?",
+      "answer": "Servicio de energia electrica residencial/comercial [Factura DEMO-VEC-05, pág. 1]",
+      "topK": 5,
+      "consensus": {
+        "role": "base",
+        "provider": "local",
+        "model": "grounded-top1",
+        "score": 0.7998
+      },
+      "faithfulness": 1,
+      "context_precision": 0.4,
+      "context_recall": 1,
+      "answer_relevancy": 0.3326,
+      "answer_correctness": 0.625,
+      "ragas": 0.6832
+    },
+    {
+      "id": "aguas-nit",
+      "question": "Cual es el NIT de Aguas de la Sabana?",
+      "answer": "Acueducto y alcantarillado [Factura DEMO-VEC-01, pág. 1] AGUAS DE LA SABANA S.A. ESP. ODIGO 070-001-0015463 [Factura S-FS13928501-2, pág. 1]",
+      "topK": 5,
+      "consensus": {
+        "role": "adjusted",
+        "provider": "local",
+        "model": "grounded-top3",
+        "score": 0.8155
+      },
+      "faithfulness": 1,
+      "context_precision": 1,
+      "context_recall": 1,
+      "answer_relevancy": 0.3849,
+      "answer_correctness": 0.75,
+      "ragas": 0.8462
+    },
+    {
+      "id": "papeleria",
+      "question": "Hay alguna factura de papeleria o utiles de oficina?",
+      "answer": "Pedido de utiles de oficina [Factura DEMO-VEC-03, pág. 1]",
+      "topK": 5,
+      "consensus": {
+        "role": "base",
+        "provider": "local",
+        "model": "grounded-top1",
+        "score": 0.8313
+      },
+      "faithfulness": 1,
+      "context_precision": 0.4,
+      "context_recall": 1,
+      "answer_relevancy": 0.4376,
+      "answer_correctness": 0.5455,
+      "ragas": 0.7094
+    },
+    {
+      "id": "claro-plan",
+      "question": "Cuanto cuesta el plan de telefonia de Claro?",
+      "answer": "Factura de telefonia movil e internet fibra [Factura DEMO-VEC-02, pág. 1] Cargo plan 89.000 [Factura DEMO-VEC-02, pág. 2]",
+      "topK": 5,
+      "consensus": {
+        "role": "adjusted",
+        "provider": "local",
+        "model": "grounded-top3",
+        "score": 0.7719
+      },
+      "faithfulness": 1,
+      "context_precision": 0.4,
+      "context_recall": 1,
+      "answer_relevancy": 0.2398,
+      "answer_correctness": 0.625,
+      "ragas": 0.6599
+    },
+    {
+      "id": "sin-evidencia",
+      "question": "Cual es el canon de arriendo de un local en Madrid?",
+      "answer": "No encontré evidencia verificable en las facturas indexadas para responder esa pregunta.",
+      "topK": 5,
+      "consensus": {
+        "role": "base",
+        "provider": "local",
+        "model": "grounded-top1",
+        "score": 0.7512
+      },
+      "faithfulness": 1,
+      "context_precision": 0,
+      "context_recall": 1,
+      "answer_relevancy": 0.1706,
+      "answer_correctness": 1,
+      "ragas": 0.5426
+    }
+  ]
+}

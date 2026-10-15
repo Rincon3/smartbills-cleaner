@@ -1,0 +1,241 @@
+{
+  "generatedAt": "2026-10-15T18:03:28.098Z",
+  "durationSec": 3.3,
+  "environment": {
+    "api": "http://localhost:4000/api",
+    "node": "v23.7.0",
+    "platform": "darwin/arm64",
+    "iterationsPerEndpoint": 20,
+    "slaMs": 4000
+  },
+  "summary": {
+    "endpointsMeasured": 11,
+    "endpointsWithinSla": 11,
+    "totalErrors": 0,
+    "worstP95Ms": 91.9
+  },
+  "endpoints": [
+    {
+      "group": "Auth",
+      "name": "POST /auth/login",
+      "n": 20,
+      "errors": 0,
+      "minMs": 62.3,
+      "meanMs": 72.9,
+      "p50Ms": 65.6,
+      "p95Ms": 91.9,
+      "maxMs": 171.1,
+      "withinSla": true
+    },
+    {
+      "group": "Facturas",
+      "name": "GET /invoices (listado)",
+      "n": 20,
+      "errors": 0,
+      "minMs": 3.1,
+      "meanMs": 4.1,
+      "p50Ms": 4,
+      "p95Ms": 5,
+      "maxMs": 5.6,
+      "withinSla": true
+    },
+    {
+      "group": "Facturas",
+      "name": "GET /dashboard/summary",
+      "n": 20,
+      "errors": 0,
+      "minMs": 2.6,
+      "meanMs": 3.7,
+      "p50Ms": 3.2,
+      "p95Ms": 4.3,
+      "maxMs": 12,
+      "withinSla": true
+    },
+    {
+      "group": "Búsqueda",
+      "name": "GET /invoices/search (solo filtros SQL)",
+      "n": 20,
+      "errors": 0,
+      "minMs": 1.8,
+      "meanMs": 2.5,
+      "p50Ms": 2.3,
+      "p95Ms": 3.6,
+      "maxMs": 4.1,
+      "withinSla": true
+    },
+    {
+      "group": "Búsqueda",
+      "name": "GET /invoices/search (texto + pgvector)",
+      "n": 20,
+      "errors": 0,
+      "minMs": 3.8,
+      "meanMs": 4.5,
+      "p50Ms": 4.5,
+      "p95Ms": 5.1,
+      "maxMs": 5.2,
+      "withinSla": true
+    },
+    {
+      "group": "Búsqueda",
+      "name": "GET /invoices/search (híbrida: filtros + texto)",
+      "n": 20,
+      "errors": 0,
+      "minMs": 3.2,
+      "meanMs": 4.3,
+      "p50Ms": 4,
+      "p95Ms": 5.2,
+      "maxMs": 11.2,
+      "withinSla": true
+    },
+    {
+      "group": "RAG",
+      "name": "RAG: Cuanto pague de energia electrica con …",
+      "n": 10,
+      "errors": 0,
+      "minMs": 3.5,
+      "meanMs": 4.1,
+      "p50Ms": 4.1,
+      "p95Ms": 5.1,
+      "maxMs": 5.1,
+      "withinSla": true,
+      "noEvidence": false,
+      "citations": 5,
+      "consensus": {
+        "role": "base",
+        "provider": "local",
+        "model": "grounded-top1",
+        "score": 0.7998
+      }
+    },
+    {
+      "group": "RAG",
+      "name": "RAG: Cual es el NIT de Aguas de la Sabana?…",
+      "n": 10,
+      "errors": 0,
+      "minMs": 3.1,
+      "meanMs": 3.7,
+      "p50Ms": 3.7,
+      "p95Ms": 4.2,
+      "maxMs": 4.2,
+      "withinSla": true,
+      "noEvidence": false,
+      "citations": 5,
+      "consensus": {
+        "role": "adjusted",
+        "provider": "local",
+        "model": "grounded-top3",
+        "score": 0.8155
+      }
+    },
+    {
+      "group": "RAG",
+      "name": "RAG: Hay alguna factura de papeleria o util…",
+      "n": 10,
+      "errors": 0,
+      "minMs": 3.6,
+      "meanMs": 4.3,
+      "p50Ms": 4,
+      "p95Ms": 5.9,
+      "maxMs": 5.9,
+      "withinSla": true,
+      "noEvidence": false,
+      "citations": 5,
+      "consensus": {
+        "role": "base",
+        "provider": "local",
+        "model": "grounded-top1",
+        "score": 0.8313
+      }
+    },
+    {
+      "group": "RAG",
+      "name": "RAG: Cuanto cuesta el plan de telefonia de …",
+      "n": 10,
+      "errors": 0,
+      "minMs": 3.2,
+      "meanMs": 3.7,
+      "p50Ms": 3.7,
+      "p95Ms": 4.3,
+      "maxMs": 4.3,
+      "withinSla": true,
+      "noEvidence": false,
+      "citations": 5,
+      "consensus": {
+        "role": "adjusted",
+        "provider": "local",
+        "model": "grounded-top3",
+        "score": 0.7719
+      }
+    },
+    {
+      "group": "RAG",
+      "name": "RAG: Cual es el canon de arriendo de un loc…",
+      "n": 10,
+      "errors": 0,
+      "minMs": 2.9,
+      "meanMs": 3.5,
+      "p50Ms": 3.2,
+      "p95Ms": 4.8,
+      "maxMs": 4.8,
+      "withinSla": true,
+      "noEvidence": true,
+      "citations": 0,
+      "consensus": {
+        "role": "base",
+        "provider": "local",
+        "model": "grounded-top1",
+        "score": 0.7512
+      }
+    }
+  ],
+  "concurrency": {
+    "parallel": 10,
+    "wallMs": 27.5,
+    "throughputPerSec": 363,
+    "n": 10,
+    "errors": 0,
+    "minMs": 5.6,
+    "meanMs": 20.8,
+    "p50Ms": 23,
+    "p95Ms": 24.6,
+    "maxMs": 24.6,
+    "withinSla": true
+  },
+  "ocr": {
+    "n": 3,
+    "errors": 0,
+    "minMs": 19.2,
+    "meanMs": 28.2,
+    "p50Ms": 25,
+    "p95Ms": 40.5,
+    "maxMs": 40.5,
+    "withinSla": true,
+    "detail": {
+      "pageCount": 1,
+      "status": "PROCESSED",
+      "supplier": "Editorial Andes SAS",
+      "taxId": "900.123.456-7",
+      "total": 1190000,
+      "fields": 7
+    }
+  },
+  "ocrImage": {
+    "n": 3,
+    "errors": 0,
+    "minMs": 219.4,
+    "meanMs": 293.5,
+    "p50Ms": 324.4,
+    "p95Ms": 336.6,
+    "maxMs": 336.6,
+    "withinSla": true,
+    "imageKB": 42,
+    "detail": {
+      "status": "PROCESSED",
+      "supplier": "Editorial Andes SAS",
+      "taxId": "900.123.456-7",
+      "total": 1190000,
+      "fields": 7,
+      "confidence": 1
+    }
+  }
+}

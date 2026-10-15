@@ -10,7 +10,9 @@
     "db:seed": "prisma db seed",
     "test": "node --test src/services/ocr/*.test.js src/services/invoiceDocument.test.js src/services/vectorStore.test.js src/services/invoiceSearchService.test.js src/services/rag/*.test.js",
     "test:jira": "node scripts/jira-unit-evidence.mjs",
-    "eval:ragas": "node scripts/ragas-eval.mjs"
+    "eval:ragas": "node scripts/ragas-eval.mjs",
+    "perf": "node scripts/perf-benchmark.mjs",
+    "report:metrics": "node scripts/build-metrics-report.mjs"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
