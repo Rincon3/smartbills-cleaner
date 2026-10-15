@@ -14,7 +14,11 @@ const files = [
   path.join(backendRoot, "src/services/ocr/extractInvoiceFields.test.js"),
   path.join(backendRoot, "src/services/ocr/ocrEngine.test.js"),
   path.join(backendRoot, "src/services/ocr/processInvoiceDocument.test.js"),
-  path.join(backendRoot, "src/services/invoiceDocument.test.js")
+  path.join(backendRoot, "src/services/invoiceDocument.test.js"),
+  path.join(backendRoot, "src/services/vectorStore.test.js"),
+  path.join(backendRoot, "src/services/rag/prompt.test.js"),
+  path.join(backendRoot, "src/services/rag/consensus.test.js"),
+  path.join(backendRoot, "src/services/rag/ragasMetrics.test.js")
 ];
 
 const results = [];
