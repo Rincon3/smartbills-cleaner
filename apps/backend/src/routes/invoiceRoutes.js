@@ -4,6 +4,7 @@ import multer from "multer";
 import { prisma } from "../config/prisma.js";
 import { createAuditLog } from "../services/auditService.js";
 import { indexInvoiceChunks } from "../services/chunkIndexService.js";
+import { searchInvoicesHybrid } from "../services/invoiceSearchService.js";
 import { processInvoiceDocument } from "../services/ocr/processInvoiceDocument.js";
 import { getClientIp } from "../utils/http.js";
 import { resolveStoredFile, uploadsDir } from "../utils/paths.js";
@@ -88,6 +89,22 @@ function toInvoiceResponse(invoice) {
 }
 
 export const invoiceRouter = Router();
+
+invoiceRouter.get("/search", async (req, res) => {
+  const result = await searchInvoicesHybrid(req.query);
+  return res.json({
+    invoices: result.invoices.map((invoice) => ({
+      ...toInvoiceResponse(invoice),
+      score: invoice.score,
+      matchPage: invoice.matchPage,
+      matchSection: invoice.matchSection,
+      matchText: invoice.matchText
+    })),
+    elapsedMs: result.elapsedMs,
+    mode: result.mode,
+    withinSla: result.elapsedMs < 4000
+  });
+});
 
 invoiceRouter.get("/", async (req, res) => {
   const { status, supplier, from, to } = req.query;

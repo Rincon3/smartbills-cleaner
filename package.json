@@ -14,7 +14,8 @@
     "db:migrate": "npm run db:migrate --workspace backend",
     "db:seed": "npm run db:seed --workspace backend",
     "test": "npm test --workspace backend",
-    "test:jira": "npm run test:jira --workspace backend"
+    "test:jira": "npm run test:jira --workspace backend",
+    "eval:ragas": "npm run eval:ragas --workspace backend"
   }
 }
 

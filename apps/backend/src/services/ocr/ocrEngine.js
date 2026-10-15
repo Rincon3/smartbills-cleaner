@@ -3,6 +3,7 @@ import os from "os";
 import path from "path";
 import { execFile } from "child_process";
 import { promisify } from "util";
+import { tryCloudOcr } from "./cloudOcr.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -126,64 +127,100 @@ function cleanOcrText(text) {
     .trim();
 }
 
-function isSparse(pages) {
-  const text = pages.map((page) => page.text).join(" ").replace(/\s+/g, " ").trim();
+export function isSparse(pages) {
+  const text = (pages || []).map((page) => page.text).join(" ").replace(/\s+/g, " ").trim();
   return text.length < 40;
+}
+
+function toResult(engine, pages) {
+  const normalized = (pages || []).map((page, index) => ({
+    page: page.page || index + 1,
+    section: page.section || `Página ${page.page || index + 1}`,
+    text: page.text || "",
+    engine: page.engine || engine
+  }));
+
+  return {
+    engine,
+    pageCount: normalized.length,
+    pages: normalized
+  };
+}
+
+async function extractWithTesseractPdf(filePath) {
+  if (!(await hasBinary("pdftoppm")) || !(await hasBinary("tesseract"))) {
+    return null;
+  }
+
+  const raster = await rasterizePdfPages(filePath);
+  try {
+    const pages = [];
+    for (const image of raster.images) {
+      const ocr = await ocrImage(image.path);
+      pages.push({ page: image.page, text: cleanOcrText(ocr.text), engine: ocr.engine });
+    }
+    return toResult("tesseract", pages);
+  } finally {
+    await fs.rm(raster.tempDir, { recursive: true, force: true });
+  }
 }
 
 export async function extractDocumentPages({ filePath, mimeType }) {
   const isPdf = mimeType === "application/pdf" || filePath.toLowerCase().endsWith(".pdf");
 
   if (isPdf) {
-    let pages = [];
-    let engine = "pdfjs";
+    let local = toResult("pdfjs", []);
 
-    if (await hasBinary("pdftotext")) {
-      pages = await extractPdfTextNative(filePath);
-      engine = "pdftotext";
-    } else {
-      pages = await extractPdfTextWithPdfjs(filePath);
-    }
-
-    if (isSparse(pages) && (await hasBinary("pdftoppm")) && (await hasBinary("tesseract"))) {
-      const raster = await rasterizePdfPages(filePath);
-      try {
-        pages = [];
-        for (const image of raster.images) {
-          const ocr = await ocrImage(image.path);
-          pages.push({ page: image.page, text: cleanOcrText(ocr.text), engine: ocr.engine });
-        }
-        engine = "tesseract";
-      } finally {
-        await fs.rm(raster.tempDir, { recursive: true, force: true });
+    try {
+      if (await hasBinary("pdftotext")) {
+        local = toResult("pdftotext", await extractPdfTextNative(filePath));
+      } else {
+        local = toResult("pdfjs", await extractPdfTextWithPdfjs(filePath));
       }
+    } catch (error) {
+      console.warn("OCR local de PDF omitido:", error.message || error);
     }
 
-    return {
-      engine,
-      pageCount: pages.length,
-      pages: pages.map((page) => ({
-        page: page.page,
-        section: `Página ${page.page}`,
-        text: page.text || "",
-        engine: page.engine || engine
-      }))
-    };
+    if (!isSparse(local.pages)) {
+      return local;
+    }
+
+    const cloud = await tryCloudOcr({ filePath, mimeType: mimeType || "application/pdf" });
+    if (cloud && !isSparse(cloud.pages)) {
+      return toResult(cloud.engine, cloud.pages);
+    }
+
+    try {
+      const tess = await extractWithTesseractPdf(filePath);
+      if (tess && !isSparse(tess.pages)) {
+        return tess;
+      }
+    } catch (error) {
+      console.warn("OCR Tesseract omitido:", error.message || error);
+    }
+
+    return local;
   }
 
-  const ocr = await ocrImage(filePath);
-  return {
-    engine: ocr.engine,
-    pageCount: 1,
-    pages: [
+  const cloud = await tryCloudOcr({ filePath, mimeType: mimeType || "image/png" });
+  if (cloud && !isSparse(cloud.pages)) {
+    return toResult(cloud.engine, cloud.pages);
+  }
+
+  try {
+    const ocr = await ocrImage(filePath);
+    return toResult(ocr.engine, [
       {
         page: 1,
         section: "Documento escaneado",
         text: cleanOcrText(ocr.text),
         engine: ocr.engine
       }
-    ]
-  };
+    ]);
+  } catch (error) {
+    console.warn("OCR de imagen omitido:", error.message || error);
+    return toResult("none", []);
+  }
 }
 
 export function serializeOcrText(pages) {

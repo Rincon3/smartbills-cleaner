@@ -8,19 +8,25 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev --name init",
     "db:seed": "prisma db seed",
-    "test": "node --test src/services/ocr src/services/invoiceDocument.test.js",
-    "test:jira": "node scripts/jira-unit-evidence.mjs"
+    "test": "node --test src/services/ocr/*.test.js src/services/invoiceDocument.test.js src/services/vectorStore.test.js src/services/invoiceSearchService.test.js src/services/rag/*.test.js",
+    "test:jira": "node scripts/jira-unit-evidence.mjs",
+    "eval:ragas": "node scripts/ragas-eval.mjs"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
   },
   "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.1147.0",
+    "@aws-sdk/client-textract": "^3.1148.0",
+    "@langchain/aws": "^1.4.6",
+    "@langchain/core": "^1.2.17",
     "@prisma/client": "^5.16.2",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
+    "langchain": "^1.5.15",
     "multer": "^1.4.5-lts.1",
     "pdfjs-dist": "^4.10.38",
     "tesseract.js": "^5.1.1"
@@ -29,4 +35,3 @@
     "prisma": "^5.16.2"
   }
 }
-

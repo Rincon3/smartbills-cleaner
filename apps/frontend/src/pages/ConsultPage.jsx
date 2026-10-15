@@ -1,12 +1,15 @@
 import { useMemo, useState } from "react";
 import { api } from "../api/client";
+import { AdvancedSearchForm, emptyFilters } from "../components/AdvancedSearchForm";
 
 const CITATION_PATTERN = /\[Factura ([^\],]+), pág\. (\d+)\]/g;
+const TOP_K = 5;
 
 const suggestedQuestions = [
-  "Cual es el NIT de Editorial Alpha?",
-  "Cuanto es el total a pagar de Global News Media?",
-  "Que IVA aparece en la factura de Distribuidora Continental?"
+  "Cual es el NIT de Aguas de la Sabana?",
+  "Cuanto pague de energia electrica con Enel?",
+  "Hay alguna factura de papeleria o utiles de oficina?",
+  "Cual es el canon de arriendo de un local en Madrid?"
 ];
 
 function parseAnswer(answer) {
@@ -37,16 +40,21 @@ function parseAnswer(answer) {
 
 export function ConsultPage() {
   const [question, setQuestion] = useState("");
+  const [filters, setFilters] = useState(emptyFilters);
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [selectedSource, setSelectedSource] = useState(null);
 
   const answerParts = useMemo(() => parseAnswer(result?.answer), [result]);
+  const sources = result?.sources || [];
+  const topK = result?.retrieval?.topK || TOP_K;
+  const noEvidence = Boolean(result?.noEvidence) || sources.length === 0;
+  const elapsedMs = result?.elapsedMs ?? result?.retrieval?.elapsedMs;
 
   const openSource = async (citation) => {
     const match =
-      result?.sources?.find(
+      sources.find(
         (source) =>
           source.invoiceCode === citation.invoiceCode && Number(source.page) === Number(citation.page)
       ) || null;
@@ -71,18 +79,29 @@ export function ConsultPage() {
 
   const handleAsk = async (event) => {
     event.preventDefault();
-    const nextQuestion = question.trim();
+    const nextQuestion = question.trim() || filters.q.trim();
 
     if (!nextQuestion) {
+      setError("Escribe una pregunta o una palabra clave.");
       return;
     }
 
     setLoading(true);
     setError("");
+    setSelectedSource(null);
 
     try {
-      const payload = await api.queryInvoices({ question: nextQuestion });
+      const payload = await api.queryInvoices({
+        question: nextQuestion,
+        supplier: filters.supplier,
+        status: filters.status,
+        from: filters.from,
+        to: filters.to,
+        minTotal: filters.minTotal,
+        maxTotal: filters.maxTotal
+      });
       setResult(payload);
+      setQuestion(nextQuestion);
     } catch (queryError) {
       setError(queryError.message);
     } finally {
@@ -94,41 +113,44 @@ export function ConsultPage() {
     <section className="page">
       <div className="page-header compact">
         <div>
-          <p className="eyebrow">Identificacion de facturas</p>
-          <h1>Consulta con citas</h1>
+          <p className="eyebrow">Consultas RAG inteligente</p>
+          <h1>Pregunta y filtra con evidencia</h1>
           <p>
-            Cada respuesta incluye referencias verificables al documento fuente en el formato
-            [Factura X, pág. Y].
+            Respuesta en español con citas clicables. Top-{TOP_K} fragmentos. Si no hay evidencia, se
+            indica sin inventar documentos. Objetivo: menos de 4 s.
           </p>
         </div>
       </div>
 
-      <form className="panel consult-form" onSubmit={handleAsk}>
-        <label>
-          Pregunta sobre tus facturas
-          <textarea
-            rows="3"
-            placeholder="Ejemplo: Cual es el total de la factura INV-2026-001?"
-            value={question}
-            onChange={(event) => setQuestion(event.target.value)}
-          />
-        </label>
-        <div className="consult-suggestions">
-          {suggestedQuestions.map((item) => (
-            <button
-              key={item}
-              className="ghost-button"
-              type="button"
-              onClick={() => setQuestion(item)}
-            >
-              {item}
-            </button>
-          ))}
-        </div>
-        <button className="primary-button" type="submit" disabled={loading}>
-          {loading ? "Buscando evidencia..." : "Preguntar"}
-        </button>
-      </form>
+      <AdvancedSearchForm
+        filters={{ ...filters, q: question }}
+        onChange={(next) => {
+          setFilters(next);
+          setQuestion(next.q);
+        }}
+        onSubmit={handleAsk}
+        onReset={(cleared) => {
+          setFilters(cleared);
+          setQuestion("");
+          setResult(null);
+        }}
+        loading={loading}
+        submitLabel="Preguntar"
+        showStatus
+      />
+
+      <div className="consult-suggestions">
+        {suggestedQuestions.map((item) => (
+          <button
+            key={item}
+            className="ghost-button"
+            type="button"
+            onClick={() => setQuestion(item)}
+          >
+            {item}
+          </button>
+        ))}
+      </div>
 
       {error ? <div className="error-banner">{error}</div> : null}
 
@@ -137,40 +159,66 @@ export function ConsultPage() {
           <div className="panel-heading">
             <div>
               <h3>Respuesta</h3>
-              <p>Las citas apuntan al fragmento original indexado con chunk_source.</p>
+              <p>
+                Top-{topK} · {elapsedMs == null ? "—" : `${elapsedMs} ms`}
+                {result.retrieval?.withinSla === false ? " · supera 4 s" : " · dentro de 4 s"}
+                {result.consensus?.selected
+                  ? ` · consenso ${result.consensus.selected.role} (${result.consensus.selected.provider})`
+                  : ""}
+              </p>
             </div>
           </div>
-          <p className="consult-answer-body">
-            {answerParts.map((part, index) =>
-              part.type === "citation" ? (
-                <button
-                  key={`${part.value}-${index}`}
-                  className="citation-chip"
-                  type="button"
-                  onClick={() => openSource(part)}
-                >
-                  {part.value}
-                </button>
-              ) : (
-                <span key={`text-${index}`}>{part.value}</span>
-              )
-            )}
-          </p>
+
+          {noEvidence ? (
+            <div className="empty-evidence">
+              <strong>Sin evidencia verificable</strong>
+              <p>
+                {result.answer ||
+                  "No encontré evidencia en las facturas indexadas para responder esa pregunta."}
+              </p>
+            </div>
+          ) : (
+            <p className="consult-answer-body">
+              {answerParts.map((part, index) =>
+                part.type === "citation" ? (
+                  <button
+                    key={`${part.value}-${index}`}
+                    className="citation-chip"
+                    type="button"
+                    onClick={() => openSource(part)}
+                  >
+                    {part.value}
+                  </button>
+                ) : (
+                  <span key={`text-${index}`}>{part.value}</span>
+                )
+              )}
+            </p>
+          )}
 
           <div className="sources-list">
-            {(result.sources || []).map((source) => (
-              <button
-                key={source.id}
-                className="source-card"
-                type="button"
-                onClick={() => openSource(source)}
-              >
-                <strong>{source.citation}</strong>
-                <span>
-                  {source.section} · chunk_source {source.chunkSource}
-                </span>
-              </button>
-            ))}
+            <h3 className="sources-title">Fragmentos Top-{topK}</h3>
+            <p className="sources-meta">
+              {sources.length} de {topK} recuperados. Haz clic para ver el texto original.
+            </p>
+            {sources.length === 0 ? (
+              <div className="empty-evidence compact">No hay fragmentos en el Top-{topK} para esta pregunta.</div>
+            ) : (
+              sources.map((source) => (
+                <button
+                  key={source.id || `${source.invoiceCode}-${source.page}`}
+                  className="source-card"
+                  type="button"
+                  onClick={() => openSource(source)}
+                >
+                  <strong>{source.citation}</strong>
+                  <span>
+                    {source.section} · chunk_source {source.chunkSource}
+                    {source.score != null ? ` · score ${source.score}` : ""}
+                  </span>
+                </button>
+              ))
+            )}
           </div>
         </section>
       ) : null}

@@ -11,7 +11,18 @@ queryRouter.post("/", async (req, res) => {
     return res.status(400).json({ message: "La pregunta es requerida" });
   }
 
-  const result = await queryInvoices({ question, invoiceId });
+  const result = await queryInvoices({
+    question,
+    invoiceId,
+    filters: {
+      supplier: req.body?.supplier,
+      status: req.body?.status,
+      from: req.body?.from,
+      to: req.body?.to,
+      minTotal: req.body?.minTotal,
+      maxTotal: req.body?.maxTotal
+    }
+  });
   return res.json(result);
 });
 
