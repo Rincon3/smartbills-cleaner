@@ -8,7 +8,7 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev --name init",
     "db:seed": "prisma db seed",
-    "test": "node --test src/services/ocr src/services/invoiceDocument.test.js src/services/vectorStore.test.js src/services/invoiceSearchService.test.js src/services/rag/*.test.js",
+    "test": "node --test src/services/ocr/*.test.js src/services/invoiceDocument.test.js src/services/vectorStore.test.js src/services/invoiceSearchService.test.js src/services/rag/*.test.js",
     "test:jira": "node scripts/jira-unit-evidence.mjs",
     "eval:ragas": "node scripts/ragas-eval.mjs"
   },
@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.1147.0",
+    "@aws-sdk/client-textract": "^3.1148.0",
     "@langchain/aws": "^1.4.6",
     "@langchain/core": "^1.2.17",
     "@prisma/client": "^5.16.2",

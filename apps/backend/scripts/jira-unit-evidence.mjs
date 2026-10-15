@@ -13,6 +13,7 @@ const startedAt = new Date();
 const files = [
   path.join(backendRoot, "src/services/ocr/extractInvoiceFields.test.js"),
   path.join(backendRoot, "src/services/ocr/ocrEngine.test.js"),
+  path.join(backendRoot, "src/services/ocr/cloudOcr.test.js"),
   path.join(backendRoot, "src/services/ocr/processInvoiceDocument.test.js"),
   path.join(backendRoot, "src/services/invoiceDocument.test.js"),
   path.join(backendRoot, "src/services/vectorStore.test.js"),

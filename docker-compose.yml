@@ -44,6 +44,13 @@ services:
       BEDROCK_BASE_MODEL: ${BEDROCK_BASE_MODEL:-amazon.nova-lite-v1:0}
       BEDROCK_ADJUSTED_MODEL: ${BEDROCK_ADJUSTED_MODEL:-amazon.nova-pro-v1:0}
       RAG_TOP_K: ${RAG_TOP_K:-5}
+      OCR_CLOUD_ORDER: ${OCR_CLOUD_ORDER:-documentai,textract}
+      GOOGLE_CLOUD_PROJECT: ${GOOGLE_CLOUD_PROJECT:-}
+      DOCUMENT_AI_LOCATION: ${DOCUMENT_AI_LOCATION:-us}
+      DOCUMENT_AI_PROCESSOR_ID: ${DOCUMENT_AI_PROCESSOR_ID:-}
+      GOOGLE_CLIENT_EMAIL: ${GOOGLE_CLIENT_EMAIL:-}
+      GOOGLE_PRIVATE_KEY: ${GOOGLE_PRIVATE_KEY:-}
+      GOOGLE_APPLICATION_CREDENTIALS: ${GOOGLE_APPLICATION_CREDENTIALS:-}
     volumes:
       - ./apps/backend:/app/apps/backend
       - /app/apps/backend/node_modules
