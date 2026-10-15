@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../api/client";
+import { AdvancedSearchForm, emptyFilters } from "../components/AdvancedSearchForm";
 import { Icon } from "../components/Icon";
 import { InvoiceEditor } from "../components/InvoiceEditor";
 
@@ -12,17 +13,31 @@ function formatCurrency(value) {
 }
 
 export function InvoicesPage() {
-  const [filters, setFilters] = useState({
-    status: "",
-    supplier: "",
-    from: "",
-    to: ""
-  });
+  const [filters, setFilters] = useState(emptyFilters);
   const [invoices, setInvoices] = useState([]);
+  const [meta, setMeta] = useState({ elapsedMs: null, mode: "sql", withinSla: true });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null);
 
-  const loadInvoices = () => api.getInvoices(filters).then(setInvoices);
+  const loadInvoices = async (nextFilters = filters) => {
+    setLoading(true);
+    setError("");
+    try {
+      const payload = await api.searchInvoices(nextFilters);
+      setInvoices(payload.invoices || []);
+      setMeta({
+        elapsedMs: payload.elapsedMs,
+        mode: payload.mode,
+        withinSla: payload.withinSla
+      });
+    } catch (loadError) {
+      setError(loadError.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     loadInvoices();
@@ -38,7 +53,7 @@ export function InvoicesPage() {
 
   const handleSearch = async (event) => {
     event.preventDefault();
-    await loadInvoices();
+    await loadInvoices(filters);
   };
 
   const handleDelete = async (id) => {
@@ -57,45 +72,58 @@ export function InvoicesPage() {
         <div>
           <p className="eyebrow">Repositorio documental</p>
           <h1>Facturas cargadas</h1>
-          <p>Visualiza el archivo original, valida los datos extraidos por OCR y elimina documentos mal incorporados.</p>
+          <p>
+            Búsqueda híbrida: filtros SQL (proveedor, fechas, montos) y ranking semántico cuando hay
+            texto.
+          </p>
         </div>
         <div className="stats-inline">
           <div>
-            <span>Total</span>
+            <span>Resultados</span>
             <strong>{totals.total}</strong>
           </div>
           <div>
             <span>Monto acumulado</span>
             <strong>{formatCurrency(totals.amount)}</strong>
           </div>
+          <div>
+            <span>Latencia</span>
+            <strong>
+              {meta.elapsedMs == null ? "—" : `${meta.elapsedMs} ms`}
+              {meta.withinSla === false ? " · >4s" : ""}
+            </strong>
+          </div>
         </div>
       </div>
 
-      <form className="filter-bar panel" onSubmit={handleSearch}>
-        <input
-          placeholder="Proveedor"
-          value={filters.supplier}
-          onChange={(event) => setFilters((current) => ({ ...current, supplier: event.target.value }))}
-        />
-        <select value={filters.status} onChange={(event) => setFilters((current) => ({ ...current, status: event.target.value }))}>
-          <option value="">Todos los estados</option>
-          <option value="QUEUED">En cola</option>
-          <option value="PROCESSING">Procesando</option>
-          <option value="PROCESSED">Procesada</option>
-          <option value="ERROR">Error OCR</option>
-        </select>
-        <input type="date" value={filters.from} onChange={(event) => setFilters((current) => ({ ...current, from: event.target.value }))} />
-        <input type="date" value={filters.to} onChange={(event) => setFilters((current) => ({ ...current, to: event.target.value }))} />
-        <button className="secondary-button" type="submit">
-          Aplicar filtros
-        </button>
-      </form>
+      <AdvancedSearchForm
+        filters={filters}
+        onChange={setFilters}
+        onSubmit={handleSearch}
+        onReset={(cleared) => {
+          setFilters(cleared);
+          loadInvoices(cleared);
+        }}
+        loading={loading}
+        submitLabel="Buscar facturas"
+      />
+
+      {error ? <div className="error-banner">{error}</div> : null}
 
       <section className="panel table-panel">
+        <div className="panel-heading">
+          <div>
+            <h3>Resultados</h3>
+            <p>
+              Orden {meta.mode === "sql+pgvector" ? "semántico (pgvector)" : "por fecha"} · modo {meta.mode}
+            </p>
+          </div>
+        </div>
         <div className="table-wrap">
           <table>
             <thead>
               <tr>
+                <th>Relevancia</th>
                 <th>Factura ID</th>
                 <th>Proveedor</th>
                 <th>Fecha</th>
@@ -108,13 +136,22 @@ export function InvoicesPage() {
             <tbody>
               {invoices.length === 0 ? (
                 <tr>
-                  <td colSpan="7">Aun no hay documentos cargados.</td>
+                  <td colSpan="8">No hay documentos con esos filtros.</td>
                 </tr>
               ) : null}
               {invoices.map((invoice) => (
                 <tr key={invoice.id}>
+                  <td>{invoice.score == null ? "—" : invoice.score.toFixed(2)}</td>
                   <td>{invoice.code}</td>
-                  <td>{invoice.supplier}</td>
+                  <td>
+                    {invoice.supplier}
+                    {invoice.matchSection ? (
+                      <small className="match-hint">
+                        {" "}
+                        · pág. {invoice.matchPage} · {invoice.matchSection}
+                      </small>
+                    ) : null}
+                  </td>
                   <td>{String(invoice.issueDate).slice(0, 10)}</td>
                   <td>{formatCurrency(invoice.total)}</td>
                   <td>{Math.round(invoice.ocrAverageConfidence * 100)}%</td>
@@ -180,4 +217,3 @@ export function InvoicesPage() {
     </section>
   );
 }
-

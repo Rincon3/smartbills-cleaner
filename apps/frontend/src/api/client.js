@@ -61,6 +61,12 @@ export const api = {
     );
     return request(`/invoices${search.toString() ? `?${search.toString()}` : ""}`);
   },
+  searchInvoices: (params = {}) => {
+    const search = new URLSearchParams(
+      Object.entries(params).filter(([, value]) => value !== undefined && value !== "")
+    );
+    return request(`/invoices/search${search.toString() ? `?${search.toString()}` : ""}`);
+  },
   getInvoice: (id) => request(`/invoices/${id}`),
   uploadInvoice: (file) => {
     const formData = new FormData();
