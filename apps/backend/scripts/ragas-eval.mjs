@@ -1,7 +1,16 @@
+import { resolve } from "node:path";
+import dotenv from "dotenv";
 import { queryInvoices } from "../src/services/queryService.js";
 import { RAG_EVAL_CASES } from "../src/services/rag/evalCases.js";
 import { ragasScores } from "../src/services/rag/ragasMetrics.js";
 import { prisma } from "../src/config/prisma.js";
+
+dotenv.config();
+dotenv.config({ path: resolve(process.cwd(), "../../.env") });
+
+if (process.argv.includes("--hash")) {
+  process.env.EMBEDDING_BASELINE = "hash";
+}
 
 const rows = [];
 
