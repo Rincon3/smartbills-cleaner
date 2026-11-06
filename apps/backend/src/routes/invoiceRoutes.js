@@ -4,6 +4,7 @@ import multer from "multer";
 import { prisma } from "../config/prisma.js";
 import { createAuditLog } from "../services/auditService.js";
 import { indexInvoiceChunks } from "../services/chunkIndexService.js";
+import { isEmbeddingUnavailable } from "../utils/titanEmbeddings.js";
 import { searchInvoicesHybrid } from "../services/invoiceSearchService.js";
 import { processInvoiceDocument } from "../services/ocr/processInvoiceDocument.js";
 import { getClientIp } from "../utils/http.js";
@@ -260,7 +261,14 @@ invoiceRouter.post("/upload", upload.single("file"), async (req, res) => {
     include: { fields: true }
   });
 
-  await indexInvoiceChunks(created.id, ocr.pages);
+  try {
+    await indexInvoiceChunks(created.id, ocr.pages);
+  } catch (error) {
+    if (!isEmbeddingUnavailable(error)) {
+      throw error;
+    }
+    console.error("Factura guardada sin vectores Titan; no se mezcla hash en vector(1024).", error.message);
+  }
 
   await createAuditLog({
     action: "UPLOAD",
@@ -319,7 +327,14 @@ invoiceRouter.put("/:id", async (req, res) => {
     include: { fields: true }
   });
 
-  await indexInvoiceChunks(updated.id);
+  try {
+    await indexInvoiceChunks(updated.id);
+  } catch (error) {
+    if (!isEmbeddingUnavailable(error)) {
+      throw error;
+    }
+    console.error("Edición guardada sin vectores Titan; no se mezcla hash en vector(1024).", error.message);
+  }
 
   await createAuditLog({
     action: "EDIT",

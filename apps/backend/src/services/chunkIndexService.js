@@ -1,5 +1,6 @@
 import { prisma } from "../config/prisma.js";
-import { EMBEDDING_MODEL, VECTOR_SIZE, embedText } from "../utils/embeddings.js";
+import { EMBEDDING_MODEL, VECTOR_SIZE } from "../utils/embeddings.js";
+import { embedForRetrieval } from "../utils/titanEmbeddings.js";
 import { buildChunkSource, buildInvoicePages } from "./invoiceDocument.js";
 import { parseOcrPages } from "./ocr/ocrEngine.js";
 import { replaceInvoiceChunks } from "./vectorStore.js";
@@ -34,20 +35,22 @@ export async function indexInvoiceChunks(invoiceId, pageTexts = null) {
   const pages = toIndexPages(invoice, pageTexts).filter((page) => page.text?.trim());
   const payload = pages.length ? pages : buildInvoicePages(invoice);
 
-  return replaceInvoiceChunks(
-    invoice.id,
-    payload.map((page) => ({
+  const chunks = [];
+  for (const page of payload) {
+    chunks.push({
       page: page.page,
       section: page.section,
       text: page.text,
       chunkSource: buildChunkSource(invoice.id, page.page),
-      embedding: embedText(
+      embedding: await embedForRetrieval(
         `${invoice.code} ${invoice.supplier} ${invoice.taxId} ${page.section} ${page.text}`
       ),
       embeddingModel: EMBEDDING_MODEL,
       embeddingDim: VECTOR_SIZE
-    }))
-  );
+    });
+  }
+
+  return replaceInvoiceChunks(invoice.id, chunks);
 }
 
 export async function ensureInvoiceChunksIndexed() {
@@ -62,12 +65,16 @@ export async function ensureInvoiceChunksIndexed() {
     const stale = await prisma.invoiceChunk.count({
       where: {
         invoiceId: invoice.id,
-        embeddingModel: { not: EMBEDDING_MODEL }
+        OR: [{ embeddingModel: { not: EMBEDDING_MODEL } }, { embeddingDim: { not: VECTOR_SIZE } }]
       }
     });
 
     if (count === 0 || stale > 0) {
-      await indexInvoiceChunks(invoice.id);
+      try {
+        await indexInvoiceChunks(invoice.id);
+      } catch (error) {
+        console.error(`No se reindexó ${invoice.id} con Titan; no se escribe hash en vector(1024).`, error.message);
+      }
     }
   }
 }

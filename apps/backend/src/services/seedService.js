@@ -119,7 +119,11 @@ export async function seedDatabase({ reset = false } = {}) {
       }
     });
 
-    await indexInvoiceChunks(created.id);
+    try {
+      await indexInvoiceChunks(created.id);
+    } catch (error) {
+      console.error(`Seed ${created.id} sin vectores Titan.`, error.message);
+    }
   }
 
   await prisma.auditLog.createMany({
@@ -175,7 +179,11 @@ export async function ensureSemanticDemoInvoices(ownerId = null) {
       }
     });
 
-    await indexInvoiceChunks(created.id);
+    try {
+      await indexInvoiceChunks(created.id);
+    } catch (error) {
+      console.error(`DEMO ${created.code} sin vectores Titan.`, error.message);
+    }
     createdCount += 1;
   }
 

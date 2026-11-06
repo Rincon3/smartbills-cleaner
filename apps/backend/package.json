@@ -8,9 +8,11 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev --name init",
     "db:seed": "prisma db seed",
-    "test": "node --test src/services/ocr/*.test.js src/services/invoiceDocument.test.js src/services/vectorStore.test.js src/services/invoiceSearchService.test.js src/services/rag/*.test.js",
+    "test": "node --test src/services/ocr/*.test.js src/services/invoiceDocument.test.js src/services/vectorStore.test.js src/services/invoiceSearchService.test.js src/services/rag/*.test.js src/utils/titanEmbeddings.test.js",
     "test:jira": "node scripts/jira-unit-evidence.mjs",
     "eval:ragas": "node scripts/ragas-eval.mjs",
+    "eval:rank": "node scripts/rank-queries.mjs",
+    "reindex:embeddings": "node scripts/reindex-embeddings.mjs",
     "perf": "node scripts/perf-benchmark.mjs",
     "report:metrics": "node scripts/build-metrics-report.mjs"
   },

@@ -1,5 +1,7 @@
-export const VECTOR_SIZE = 96;
-export const EMBEDDING_MODEL = "hashed-bow-96-v2";
+export const HASH_VECTOR_SIZE = 96;
+export const HASH_EMBEDDING_MODEL = "hashed-bow-96-v2";
+export const VECTOR_SIZE = 1024;
+export const EMBEDDING_MODEL = "amazon.titan-embed-text-v2:0";
 
 const EMBEDDING_STOPWORDS = new Set([
   "el",
@@ -61,13 +63,13 @@ export function tokenize(text, { dropStopwords = false } = {}) {
 }
 
 export function embedText(text) {
-  const vector = Array.from({ length: VECTOR_SIZE }, () => 0);
+  const vector = Array.from({ length: HASH_VECTOR_SIZE }, () => 0);
   const tokens = tokenize(text, { dropStopwords: true });
 
   tokens.forEach((token, index) => {
-    vector[hashToken(token) % VECTOR_SIZE] += 1.2;
+    vector[hashToken(token) % HASH_VECTOR_SIZE] += 1.2;
     if (index < tokens.length - 1) {
-      vector[hashToken(`${token}_${tokens[index + 1]}`) % VECTOR_SIZE] += 0.8;
+      vector[hashToken(`${token}_${tokens[index + 1]}`) % HASH_VECTOR_SIZE] += 0.8;
     }
   });
 

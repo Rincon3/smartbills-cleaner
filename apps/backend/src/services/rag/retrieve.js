@@ -1,5 +1,5 @@
 import { prisma } from "../../config/prisma.js";
-import { embedText } from "../../utils/embeddings.js";
+import { embedQuery, isEmbeddingUnavailable } from "../../utils/titanEmbeddings.js";
 import { buildInvoiceWhere, parseSearchFilters } from "../invoiceSearchService.js";
 import { hybridScore, lexicalOverlap, searchSimilarChunks } from "../vectorStore.js";
 import { MIN_RETRIEVAL_SCORE, RAG_TOP_K } from "./constants.js";
@@ -53,14 +53,25 @@ export async function retrieveInvoiceHits({ question, invoiceId = null, filters 
     }
   }
 
-  const candidates = await searchSimilarChunks({
-    embedding: embedText(question),
-    invoiceIds,
-    limit: Math.max(limit * 4, 12)
-  });
+  try {
+    const query = await embedQuery(question);
+    const candidates = await searchSimilarChunks({
+      embedding: query.embedding,
+      embeddingModel: query.embeddingModel,
+      embeddingDim: query.embeddingDim,
+      invoiceIds,
+      limit: Math.max(limit * 4, 12)
+    });
 
-  return {
-    candidates,
-    hits: rankHits(question, candidates, limit)
-  };
+    return {
+      candidates,
+      hits: rankHits(question, candidates, limit)
+    };
+  } catch (error) {
+    if (!isEmbeddingUnavailable(error)) {
+      throw error;
+    }
+
+    return { candidates: [], hits: [] };
+  }
 }

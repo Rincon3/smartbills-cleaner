@@ -115,7 +115,13 @@ export function InvoicesPage() {
           <div>
             <h3>Resultados</h3>
             <p>
-              Orden {meta.mode === "sql+pgvector" ? "semántico (pgvector)" : "por fecha"} · modo {meta.mode}
+              Orden{" "}
+              {meta.mode === "sql+pgvector"
+                ? "semántico (pgvector)"
+                : meta.mode === "degraded"
+                  ? "léxico (Bedrock no disponible)"
+                  : "por fecha"}{" "}
+              · modo {meta.mode}
             </p>
           </div>
         </div>

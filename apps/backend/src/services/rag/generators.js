@@ -36,7 +36,7 @@ export async function invokeBedrock({ prompt, model, role }) {
   const { ChatBedrockConverse } = await import("@langchain/aws");
   const llm = new ChatBedrockConverse({
     model,
-    region: process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || "us-east-1",
+    region: process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || "us-east-2",
     temperature: role === "base" ? 0 : 0.1,
     maxTokens: role === "base" ? 220 : 360
   });
