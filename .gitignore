@@ -11,4 +11,6 @@ apps/backend/generated
 apps/backend/prisma/dev.db
 apps/backend/prisma/dev.db-journal
 *.log
+docs/sprint-5/example2/
+docs/sprint-5/examples/
 
