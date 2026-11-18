@@ -1,0 +1,200 @@
+{
+  "ranking": [
+    {
+      "id": "Q01",
+      "q": "energia electrica",
+      "target": "DEMO-VEC-05",
+      "hash": 4,
+      "titan": 1
+    },
+    {
+      "id": "Q02",
+      "q": "servicio de luz",
+      "target": "DEMO-VEC-05",
+      "hash": 2,
+      "titan": 1
+    },
+    {
+      "id": "Q03",
+      "q": "cuanto pague de energia",
+      "target": "DEMO-VEC-05",
+      "hash": 1,
+      "titan": 1
+    },
+    {
+      "id": "Q04",
+      "q": "NIT de Aguas de la Sabana",
+      "target": "DEMO-VEC-01",
+      "hash": 1,
+      "titan": 1
+    },
+    {
+      "id": "Q05",
+      "q": "acueducto y alcantarillado",
+      "target": "DEMO-VEC-01",
+      "hash": 1,
+      "titan": 1
+    },
+    {
+      "id": "Q06",
+      "q": "papeleria o utiles de oficina",
+      "target": "DEMO-VEC-03",
+      "hash": 2,
+      "titan": 1
+    },
+    {
+      "id": "Q07",
+      "q": "toner laser y resmas",
+      "target": "DEMO-VEC-03",
+      "hash": 1,
+      "titan": 1
+    },
+    {
+      "id": "Q08",
+      "q": "plan de telefonia movil",
+      "target": "DEMO-VEC-02",
+      "hash": 1,
+      "titan": 1
+    },
+    {
+      "id": "Q09",
+      "q": "internet fibra Claro",
+      "target": "DEMO-VEC-02",
+      "hash": 1,
+      "titan": 1
+    },
+    {
+      "id": "Q10",
+      "q": "combustible para flota",
+      "target": "DEMO-VEC-04",
+      "hash": 1,
+      "titan": 1
+    },
+    {
+      "id": "Q11",
+      "q": "galones de gasolina",
+      "target": "DEMO-VEC-04",
+      "hash": 3,
+      "titan": 1
+    },
+    {
+      "id": "Q12",
+      "q": "licencias Microsoft 365",
+      "target": "DEMO-VEC-06",
+      "hash": 1,
+      "titan": 1
+    },
+    {
+      "id": "Q13",
+      "q": "suscripcion de software",
+      "target": "DEMO-VEC-06",
+      "hash": 1,
+      "titan": 1
+    },
+    {
+      "id": "Q14",
+      "q": "consumo de kWh",
+      "target": "DEMO-VEC-05",
+      "hash": 3,
+      "titan": 1
+    },
+    {
+      "id": "Q15",
+      "q": "canon de arriendo en Madrid",
+      "target": null,
+      "hash": null,
+      "titan": null
+    },
+    {
+      "id": "Q16",
+      "q": "energia electrica Enel",
+      "target": "DEMO-VEC-05",
+      "hash": 1,
+      "titan": 1
+    }
+  ],
+  "ocr": {
+    "global": 0.3333,
+    "labeled": 78,
+    "correct": 26,
+    "files": 13,
+    "missingPredictions": 0,
+    "meetsR2": false,
+    "fields": [
+      {
+        "key": "supplier",
+        "label": "Proveedor",
+        "labeled": 13,
+        "correct": 0,
+        "acc": 0
+      },
+      {
+        "key": "nit",
+        "label": "NIT",
+        "labeled": 13,
+        "correct": 13,
+        "acc": 1
+      },
+      {
+        "key": "issue_date",
+        "label": "Fecha emisión",
+        "labeled": 13,
+        "correct": 0,
+        "acc": 0
+      },
+      {
+        "key": "subtotal",
+        "label": "Subtotal",
+        "labeled": 13,
+        "correct": 0,
+        "acc": 0
+      },
+      {
+        "key": "vat",
+        "label": "IVA",
+        "labeled": 13,
+        "correct": 0,
+        "acc": 0
+      },
+      {
+        "key": "total",
+        "label": "Total",
+        "labeled": 13,
+        "correct": 13,
+        "acc": 1
+      }
+    ]
+  },
+  "ragas": {
+    "metrics": [
+      "faithfulness",
+      "context_precision",
+      "context_recall",
+      "answer_relevancy",
+      "ragas"
+    ],
+    "labels": [
+      "Faithfulness",
+      "Context precision",
+      "Context recall",
+      "Answer relevancy",
+      "RAGAS"
+    ],
+    "antes": {
+      "faithfulness": 1,
+      "context_precision": 0.44,
+      "context_recall": 1,
+      "answer_relevancy": 0.279,
+      "ragas": 0.6797,
+      "provider": "local"
+    },
+    "despues": {
+      "faithfulness": 1,
+      "context_precision": 0.44,
+      "context_recall": 1,
+      "answer_relevancy": 0.3131,
+      "ragas": 0.6883,
+      "provider": "local"
+    }
+  }
+}

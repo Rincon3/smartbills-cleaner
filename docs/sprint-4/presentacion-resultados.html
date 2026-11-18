@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SmartBills Cleaner · Resultados Sprint 4</title>
+<style>
+  :root { --bg:#f4f7f5; --ink:#16322f; --muted:#56706c; --line:#d5e2df; --primary:#0f8b7d; --soft:#dff5f1; --accent:#f59f00; --warn:#fff3d6; --good:#e7f8eb; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--ink); font-family:"Segoe UI","Helvetica Neue",Arial,sans-serif; }
+  .deck { height:100vh; overflow:hidden; position:relative; }
+  .slide { position:absolute; inset:0; padding:48px clamp(24px,6vw,96px) 72px; display:none; flex-direction:column; justify-content:center; gap:14px; animation:in .25s ease; }
+  .slide.active { display:flex; }
+  @keyframes in { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+  h1 { font-size:clamp(2rem,5vw,3.4rem); line-height:1.1; margin:0; }
+  h2 { font-size:clamp(1.5rem,3vw,2.2rem); margin:0; }
+  h3 { margin:0 0 6px; font-size:1.05rem; }
+  p, li { color:var(--muted); font-size:1.02rem; line-height:1.5; margin:0; }
+  .tag { display:inline-block; align-self:flex-start; background:var(--soft); color:var(--primary); font-weight:700; font-size:.8rem; padding:4px 12px; border-radius:99px; }
+  .sub { font-size:1.1rem; }
+  .note { font-size:.9rem; border-left:3px solid var(--accent); padding-left:12px; }
+  .foot { font-size:.85rem; margin-top:12px; }
+  .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px; margin-top:18px; }
+  .kpi { background:#fff; border:1px solid var(--line); border-radius:16px; padding:18px; }
+  .kpi b { display:block; font-size:2rem; color:var(--primary); }
+  .kpi span { font-size:.85rem; color:var(--muted); }
+  .grid3 { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:14px; }
+  .grid2 { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:16px; padding:20px; }
+  .card.good { background:var(--good); } .card.warnc { background:var(--warn); }
+  .card ul { margin:6px 0 0; padding-left:18px; display:grid; gap:6px; }
+  .big { font-size:2.1rem; font-weight:800; color:var(--primary); margin:4px 0; }
+  code { background:#eef6f4; padding:1px 6px; border-radius:6px; font-size:.88em; }
+  .chart { display:grid; gap:7px; }
+  .lat { display:grid; grid-template-columns:minmax(220px,42%) 1fr 78px 108px; gap:12px; align-items:center; font-size:.88rem; }
+  .lat-x { font-size:.76rem; color:var(--muted); text-align:right; }
+  .lat-name { color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .lat-track { height:14px; background:#e6efed; border-radius:99px; overflow:hidden; }
+  .lat-track i { display:block; height:100%; background:var(--primary); border-radius:99px; }
+  .lat-track i.g { background:#2f9e5a; }
+  .lat-val { text-align:right; font-weight:700; color:var(--ink); }
+  .gauges { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px; }
+  .gauge { background:#fff; border:1px solid var(--line); border-radius:16px; padding:16px; text-align:center; display:grid; gap:6px; justify-items:center; }
+  .ring { --c:var(--primary); width:96px; height:96px; border-radius:50%; display:grid; place-items:center;
+    background:conic-gradient(var(--c) calc(var(--p) * 1%), #e6efed 0); }
+  .gauge.weak .ring { --c:#d98e04; }
+  .ring b { width:74px; height:74px; border-radius:50%; background:#fff; display:grid; place-items:center; font-size:1.15rem; }
+  .gauge small { color:var(--muted); font-size:.78rem; }
+  table { width:100%; border-collapse:collapse; background:#fff; font-size:.88rem; }
+  th, td { border:1px solid var(--line); padding:7px 10px; text-align:left; }
+  th { background:var(--ink); color:#fff; }
+  .nav { position:fixed; left:0; right:0; bottom:0; display:flex; align-items:center; gap:12px; padding:12px clamp(24px,6vw,96px); background:#fff; border-top:1px solid var(--line); }
+  .nav button { border:1px solid var(--line); background:var(--soft); color:var(--primary); font-weight:700; border-radius:10px; padding:8px 16px; cursor:pointer; }
+  .nav button:disabled { opacity:.4; cursor:default; }
+  .bar { flex:1; height:6px; background:#e6efed; border-radius:99px; overflow:hidden; }
+  .bar i { display:block; height:100%; width:0; background:var(--primary); transition:width .25s; }
+  .count { font-size:.85rem; color:var(--muted); min-width:48px; text-align:right; }
+  @media print {
+    .deck { height:auto; overflow:visible; } .nav { display:none; }
+    .slide { position:static; display:flex !important; min-height:100vh; page-break-after:always; animation:none; }
+  }
+</style>
+</head>
+<body>
+<div class="deck" id="deck">
+<section class="slide cover">
+    <p class="tag">Sprint 4 · Resultados</p>
+    <h1>SmartBills Cleaner<br/>estado actual medido</h1>
+    <p class="sub">Pruebas, rendimiento y calidad del RAG sobre la API real en Docker</p>
+    <div class="kpis">
+      <div class="kpi"><b>24/24</b><span>pruebas unitarias</span></div>
+      <div class="kpi"><b>11/11</b><span>endpoints &lt; 4 s</span></div>
+      <div class="kpi"><b>91,9 ms</b><span>peor p95</span></div>
+      <div class="kpi"><b>0.6883</b><span>RAGAS promedio</span></div>
+    </div>
+    <p class="foot">15 de octubre de 2026 · Node v23.7.0</p>
+  </section>
+<section class="slide">
+    <h2>Qué se midió y cómo</h2>
+    <div class="grid3">
+      <div class="card"><h3>Entorno</h3><p>Docker Compose: API Express, PostgreSQL 15 + pgvector, frontend Vite. Un usuario, <code>localhost</code>.</p></div>
+      <div class="card"><h3>Datos</h3><p>14 facturas, 26 chunks, embeddings <code>hashed-bow-96-v2</code> de 96 dimensiones.</p></div>
+      <div class="card"><h3>Método</h3><p>20 iteraciones por endpoint tras calentamiento; p50, p95 y máximo. SLA del sprint: &lt; 4 s.</p></div>
+    </div>
+    <p class="note">Las facturas subidas para medir OCR se eliminaron; la tabla de escala vectorial fue temporal.</p>
+  </section>
+<section class="slide">
+    <h2>Pruebas unitarias: 24/24 en 672 ms</h2>
+    <div class="chart"><div class="lat"><span class="lat-name">ocr y extraccion</span>
+      <div class="lat-track"><i class="g" style="width:100%"></i></div><span class="lat-val">14 PASS</span></div><div class="lat"><span class="lat-name">documento y citas</span>
+      <div class="lat-track"><i class="g" style="width:14.285714285714285%"></i></div><span class="lat-val">2 PASS</span></div><div class="lat"><span class="lat-name">vectorStore</span>
+      <div class="lat-track"><i class="g" style="width:21.428571428571427%"></i></div><span class="lat-val">3 PASS</span></div><div class="lat"><span class="lat-name">busqueda hibrida</span>
+      <div class="lat-track"><i class="g" style="width:14.285714285714285%"></i></div><span class="lat-val">2 PASS</span></div><div class="lat"><span class="lat-name">rag</span>
+      <div class="lat-track"><i class="g" style="width:21.428571428571427%"></i></div><span class="lat-val">3 PASS</span></div></div>
+    <p class="note">Cubren OCR y extracción de campos colombianos, citas, búsqueda híbrida, pgvector, prompt, consenso y métricas RAGAS. Sin pruebas E2E ni de frontend todavía.</p>
+  </section>
+<section class="slide">
+    <h2>Latencia de la API (p95)</h2>
+    <p class="sub">SLA del sprint: 4000 ms. El peor p95 usa solo el 2,3 % del límite (barras relativas al endpoint más lento).</p>
+    <div class="chart"><div class="lat">
+      <span class="lat-name" title="GET /invoices (listado)">GET /invoices (listado)</span>
+      <div class="lat-track"><i style="width:5.44%"></i></div>
+      <span class="lat-val">5 ms</span>
+      <span class="lat-x">800× bajo SLA</span>
+    </div><div class="lat">
+      <span class="lat-name" title="GET /dashboard/summary">GET /dashboard/summary</span>
+      <div class="lat-track"><i style="width:4.68%"></i></div>
+      <span class="lat-val">4,3 ms</span>
+      <span class="lat-x">930× bajo SLA</span>
+    </div><div class="lat">
+      <span class="lat-name" title="GET /invoices/search (solo filtros SQL)">GET /invoices/search (solo filtros SQL)</span>
+      <div class="lat-track"><i style="width:3.92%"></i></div>
+      <span class="lat-val">3,6 ms</span>
+      <span class="lat-x">1111× bajo SLA</span>
+    </div><div class="lat">
+      <span class="lat-name" title="GET /invoices/search (texto + pgvector)">GET /invoices/search (texto + pgvector)</span>
+      <div class="lat-track"><i style="width:5.55%"></i></div>
+      <span class="lat-val">5,1 ms</span>
+      <span class="lat-x">784× bajo SLA</span>
+    </div><div class="lat">
+      <span class="lat-name" title="GET /invoices/search (híbrida: filtros + texto)">GET /invoices/search (híbrida: filtros + texto)</span>
+      <div class="lat-track"><i style="width:5.66%"></i></div>
+      <span class="lat-val">5,2 ms</span>
+      <span class="lat-x">769× bajo SLA</span>
+    </div><div class="lat">
+      <span class="lat-name" title="RAG: Cuanto pague de energia electrica con …">RAG: Cuanto pague de energia electrica con …</span>
+      <div class="lat-track"><i style="width:5.55%"></i></div>
+      <span class="lat-val">5,1 ms</span>
+      <span class="lat-x">784× bajo SLA</span>
+    </div><div class="lat">
+      <span class="lat-name" title="RAG: Cual es el NIT de Aguas de la Sabana?…">RAG: Cual es el NIT de Aguas de la Sabana?…</span>
+      <div class="lat-track"><i style="width:4.57%"></i></div>
+      <span class="lat-val">4,2 ms</span>
+      <span class="lat-x">952× bajo SLA</span>
+    </div><div class="lat">
+      <span class="lat-name" title="RAG: Hay alguna factura de papeleria o util…">RAG: Hay alguna factura de papeleria o util…</span>
+      <div class="lat-track"><i style="width:6.42%"></i></div>
+      <span class="lat-val">5,9 ms</span>
+      <span class="lat-x">678× bajo SLA</span>
+    </div><div class="lat">
+      <span class="lat-name" title="RAG: Cuanto cuesta el plan de telefonia de …">RAG: Cuanto cuesta el plan de telefonia de …</span>
+      <div class="lat-track"><i style="width:4.68%"></i></div>
+      <span class="lat-val">4,3 ms</span>
+      <span class="lat-x">930× bajo SLA</span>
+    </div><div class="lat">
+      <span class="lat-name" title="RAG: Cual es el canon de arriendo de un loc…">RAG: Cual es el canon de arriendo de un loc…</span>
+      <div class="lat-track"><i style="width:5.22%"></i></div>
+      <span class="lat-val">4,8 ms</span>
+      <span class="lat-x">833× bajo SLA</span>
+    </div><div class="lat">
+      <span class="lat-name" title="POST /auth/login">POST /auth/login</span>
+      <div class="lat-track"><i style="width:100.00%"></i></div>
+      <span class="lat-val">91,9 ms</span>
+      <span class="lat-x">44× bajo SLA</span>
+    </div></div>
+    <p class="note">Listado, búsquedas y consultas RAG: p95 de 3,6–5,9 ms. El login es el más lento por el hash bcrypt.</p>
+  </section>
+<section class="slide">
+    <h2>Escala, concurrencia y OCR</h2>
+    <div class="grid3">
+      <div class="card"><h3>pgvector HNSW</h3>
+        <p class="big">0,55 ms</p>
+        <p>media con 20.000 vectores. Sin índice: 1,99 ms.</p></div>
+      <div class="card"><h3>10 en paralelo</h3>
+        <p class="big">363/s</p>
+        <p>búsquedas semánticas, p95 24,6 ms, 0 errores.</p></div>
+      <div class="card"><h3>OCR</h3>
+        <p class="big">25 / 324,4 ms</p>
+        <p>PDF nativo / imagen con Tesseract. Extrae Editorial Andes SAS y NIT 900.123.456-7.</p></div>
+    </div>
+    <p class="note">Vectores sintéticos para la prueba de escala; la imagen OCR es un render limpio, no un escaneo ruidoso.</p>
+  </section>
+<section class="slide">
+    <h2>Calidad del RAG (RAGAS local, Top-5)</h2>
+    <div class="gauges">
+      <div class="gauge ">
+    <div class="ring" style="--p:100"><b>1</b></div>
+    <strong>Faithfulness</strong><small>respuestas apoyadas en citas</small></div>
+      <div class="gauge ">
+    <div class="ring" style="--p:100"><b>1</b></div>
+    <strong>Context recall</strong><small>la evidencia correcta entra</small></div>
+      <div class="gauge weak">
+    <div class="ring" style="--p:44"><b>0.44</b></div>
+    <strong>Context precision</strong><small>hay fragmentos de relleno</small></div>
+      <div class="gauge weak">
+    <div class="ring" style="--p:31"><b>0.3131</b></div>
+    <strong>Answer relevancy</strong><small>no siempre da el monto</small></div>
+    </div>
+    <table><thead><tr><th>Caso</th><th>Precision</th><th>Relevancy</th><th>RAGAS</th></tr></thead><tbody><tr><td>enel-energia</td><td>0.4</td><td>0.3326</td><td><b>0.6832</b></td></tr><tr><td>aguas-nit</td><td>1</td><td>0.3849</td><td><b>0.8462</b></td></tr><tr><td>papeleria</td><td>0.4</td><td>0.4376</td><td><b>0.7094</b></td></tr><tr><td>claro-plan</td><td>0.4</td><td>0.2398</td><td><b>0.6599</b></td></tr><tr><td>sin-evidencia</td><td>0</td><td>0.1706</td><td><b>0.5426</b></td></tr></tbody></table>
+  </section>
+<section class="slide">
+    <h2>Conclusión y siguientes pasos</h2>
+    <div class="grid2">
+      <div class="card good"><h3>Lo que está demostrado</h3>
+        <ul><li>Flujo completo funcional: carga, OCR, indexación vectorial, búsqueda híbrida y consultas con citas.</li>
+        <li>Todas las pruebas pasan y el SLA de 4 s se cumple con amplio margen.</li>
+        <li>Sin claves de nube nada se rompe: cae a OCR y generación locales.</li>
+        <li>Sin evidencia, el sistema lo dice (caso Madrid).</li></ul></div>
+      <div class="card warnc"><h3>Lo que falta</h3>
+        <ul><li>Subir precision y relevancy: reordenar el Top-5 y probar generación con Bedrock.</li>
+        <li>Medir con más datos reales y escaneos ruidosos.</li>
+        <li>Medir Document AI / Textract con credenciales.</li>
+        <li>Pruebas E2E de frontend.</li></ul></div>
+    </div>
+  </section>
+</div>
+<nav class="nav">
+  <button id="prev">← Anterior</button>
+  <div class="bar"><i id="progress"></i></div>
+  <span class="count" id="count"></span>
+  <button id="next">Siguiente →</button>
+</nav>
+<script>
+  const slides = [...document.querySelectorAll(".slide")];
+  let current = Number(location.hash.replace("#", "")) - 1 || 0;
+  const show = (i) => {
+    current = Math.max(0, Math.min(slides.length - 1, i));
+    slides.forEach((s, n) => s.classList.toggle("active", n === current));
+    document.getElementById("progress").style.width = ((current + 1) / slides.length) * 100 + "%";
+    document.getElementById("count").textContent = current + 1 + " / " + slides.length;
+    document.getElementById("prev").disabled = current === 0;
+    document.getElementById("next").disabled = current === slides.length - 1;
+    history.replaceState(null, "", "#" + (current + 1));
+  };
+  document.getElementById("prev").onclick = () => show(current - 1);
+  document.getElementById("next").onclick = () => show(current + 1);
+  document.addEventListener("keydown", (e) => {
+    if (["ArrowRight", "PageDown", " "].includes(e.key)) { e.preventDefault(); show(current + 1); }
+    if (["ArrowLeft", "PageUp"].includes(e.key)) { e.preventDefault(); show(current - 1); }
+    if (e.key === "Home") show(0);
+    if (e.key === "End") show(slides.length - 1);
+  });
+  show(current);
+</script>
+</body>
+</html>

@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SmartBills Cleaner · Sprint 4 · Avance y resultados</title>
+<style>
+  :root {
+    --ink:#10302c; --muted:#4f6a66; --line:#d3e1de; --bg:#e9f0ee;
+    --primary:#0f8b7d; --primary-d:#0a6358; --soft:#dff5f1;
+    --blue:#1d5d9b; --blue-soft:#e4eef9;
+    --amber:#c77d00; --amber-soft:#fff3d6;
+    --red:#b23a3a; --red-soft:#fdeaea;
+    --green:#1f7a45; --green-soft:#e3f6e9;
+  }
+  * { box-sizing:border-box; }
+  html, body { margin:0; height:100%; background:#0e1f1d; font-family:"Segoe UI","Helvetica Neue",Arial,sans-serif; color:var(--ink); overflow:hidden; }
+
+  /* ---------- Escenario 16:9 escalable ---------- */
+  #viewport { position:fixed; inset:0 0 54px 0; display:grid; place-items:center; }
+  #stage { width:1280px; height:720px; position:relative; transform-origin:center center; }
+  .slide { position:absolute; inset:0; background:#fff; border-radius:18px; overflow:hidden; display:none; padding:34px 48px 46px; }
+  .slide.active { display:block; animation:in .28s ease; }
+  @keyframes in { from { opacity:0; transform:translateX(16px);} to { opacity:1; transform:none;} }
+  .slide::before { content:""; position:absolute; left:0; top:0; right:0; height:6px; background:linear-gradient(90deg,var(--primary),var(--blue)); }
+  .foot { position:absolute; left:48px; right:48px; bottom:14px; display:flex; justify-content:space-between; font-size:11px; color:#8aa09c; }
+
+  h1,h2,h3,p { margin:0; }
+  .kicker { display:inline-block; font-size:11px; font-weight:800; letter-spacing:.09em; text-transform:uppercase; color:var(--primary); background:var(--soft); padding:4px 11px; border-radius:99px; margin-bottom:9px; }
+  .title { font-size:32px; line-height:1.15; font-weight:800; letter-spacing:-.01em; }
+  .sub { font-size:17px; color:var(--muted); margin-top:7px; line-height:1.45; max-width:1080px; }
+  .body { margin-top:20px; }
+
+  /* ---------- Layout ---------- */
+  .row { display:flex; gap:16px; }
+  .col { flex:1; min-width:0; }
+  .g2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .g3 { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+  .g4 { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+  .card { border:1px solid var(--line); border-radius:14px; padding:14px 16px; background:#fbfdfc; }
+  .card h3 { font-size:17.5px; margin-bottom:8px; }
+  .card p, .card li { font-size:15.5px; color:var(--muted); line-height:1.5; }
+  .card ul { margin:6px 0 0; padding-left:17px; }
+  .card.soft { background:var(--soft); border-color:#bfe6df; }
+  .card.warn { background:var(--amber-soft); border-color:#f1d9a0; }
+  .card.bad { background:var(--red-soft); border-color:#f0c3c3; }
+  .card.good { background:var(--green-soft); border-color:#bfe3cb; }
+  .card.dark { background:var(--ink); border-color:var(--ink); }
+  .card.dark h3, .card.dark p, .card.dark li { color:#e6f6f2; }
+
+  .chip { display:inline-block; padding:3px 11px; border-radius:99px; font-size:13px; font-weight:700; white-space:nowrap; }
+  .chip.ok { background:var(--green-soft); color:var(--green); }
+  .chip.part { background:var(--amber-soft); color:var(--amber); }
+  .chip.no { background:var(--red-soft); color:var(--red); }
+  .chip.info { background:var(--blue-soft); color:var(--blue); }
+  .chip.gray { background:#eef2f1; color:#5b706c; }
+
+  table { width:100%; border-collapse:collapse; font-size:14.5px; }
+  th,td { border:1px solid var(--line); padding:8px 11px; text-align:left; vertical-align:top; line-height:1.4; }
+  th { background:var(--ink); color:#fff; font-weight:700; }
+  td { color:#33504c; }
+  td b { color:var(--ink); }
+  tr.hl td { background:#f4fbf9; }
+
+  .shot { width:100%; border-radius:10px; border:1px solid var(--line); display:block; box-shadow:0 8px 24px rgba(16,48,44,.12); }
+  figcaption { font-size:13px; color:var(--muted); margin-top:6px; line-height:1.4; }
+  figure { margin:0; }
+
+  .kpi { border-radius:14px; padding:14px 16px; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.2); }
+  .kpi b { display:block; font-size:34px; line-height:1; color:#fff; }
+  .kpi span { font-size:12.5px; color:#bfe3dc; }
+
+  .bars .r { display:grid; grid-template-columns:230px 1fr 80px; gap:10px; align-items:center; margin:5px 0; font-size:12.5px; }
+  .bars .n { color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .bars .t { height:13px; background:#e6efed; border-radius:99px; overflow:hidden; }
+  .bars .t i { display:block; height:100%; background:var(--primary); border-radius:99px; }
+  .bars .t i.g { background:#2f9e5a; }
+  .bars .v { text-align:right; font-weight:700; color:var(--ink); }
+
+  .big { font-size:36px; font-weight:800; color:var(--primary); line-height:1.05; }
+  .small { font-size:11.5px; color:var(--muted); }
+  .ring { --c:var(--primary); width:92px; height:92px; border-radius:50%; display:grid; place-items:center; margin:0 auto 6px;
+    background:conic-gradient(var(--c) calc(var(--p)*1%), #e3ecea 0); }
+  .ring b { width:68px; height:68px; border-radius:50%; background:#fff; display:grid; place-items:center; font-size:17px; }
+  .ring.weak { --c:#d98e04; }
+  .gauge { text-align:center; }
+  .gauge strong { display:block; font-size:13.5px; }
+  .gauge small { color:var(--muted); font-size:11.5px; }
+
+  .term { background:#0f2422; color:#d7efe9; border-radius:12px; padding:14px 16px; font:12px/1.5 "SF Mono",Menlo,Consolas,monospace; white-space:pre; overflow:hidden; }
+  .term .k { color:#7fe0cf; } .term .d { color:#8aa8a2; }
+  .flow { display:flex; align-items:stretch; gap:8px; }
+  .step { flex:1; border:1px solid var(--line); border-radius:12px; padding:11px 10px; background:#fbfdfc; position:relative; }
+  .step b { display:block; font-size:14.5px; margin-bottom:4px; }
+  .step span { font-size:13px; color:var(--muted); line-height:1.4; display:block; }
+  .step .n { position:absolute; top:-10px; left:10px; background:var(--primary); color:#fff; border-radius:99px; width:22px; height:22px; font-size:12px; font-weight:800; display:grid; place-items:center; }
+  .arrow { align-self:center; color:var(--primary); font-weight:800; font-size:18px; }
+  .callout { position:relative; padding-left:34px; margin:10px 0; font-size:15px; color:#33504c; line-height:1.45; }
+  .callout i { position:absolute; left:0; top:0; width:24px; height:24px; border-radius:99px; background:var(--primary); color:#fff; font-style:normal; font-weight:800; font-size:12.5px; display:grid; place-items:center; }
+
+  /* ---------- Portada ---------- */
+  .cover { background:radial-gradient(circle at 15% 10%, #14a08f 0%, #0b4f47 45%, #08302c 100%); color:#fff; padding:60px 70px; }
+  .cover::before { display:none; }
+  .cover .kicker { background:rgba(255,255,255,.14); color:#c9f2ea; }
+  .cover h1 { font-size:54px; line-height:1.05; letter-spacing:-.02em; margin:14px 0 14px; max-width:900px; }
+  .cover p.lead { font-size:19px; color:#cfeee8; max-width:860px; line-height:1.5; }
+  .cover .kpis { position:absolute; left:70px; right:70px; bottom:118px; display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+  .cover .who { position:absolute; left:70px; bottom:50px; font-size:14px; color:#a8d9d0; }
+
+  /* ---------- Navegación ---------- */
+  #nav { position:fixed; left:0; right:0; bottom:0; height:54px; background:#0a1917; display:flex; align-items:center; gap:14px; padding:0 22px; color:#9cb8b3; font-size:13px; }
+  #nav button { background:#173733; color:#bfece3; border:1px solid #2a524c; padding:7px 15px; border-radius:9px; cursor:pointer; font-weight:700; }
+  #nav button:disabled { opacity:.35; cursor:default; }
+  #bar { flex:1; height:5px; background:#1c3a36; border-radius:99px; overflow:hidden; }
+  #bar i { display:block; height:100%; width:0; background:#2fc4ae; transition:width .25s; }
+  #ttl { min-width:260px; text-align:right; }
+
+
+  /* Diapositivas con poco contenido: tipografía y espaciado mayores */
+  .slide.lg .sub { font-size:19px; }
+  .slide.lg .body { margin-top:26px; }
+  .slide.lg .g2, .slide.lg .g3, .slide.lg .g4 { gap:22px; }
+  .slide.lg .card { padding:22px 26px; border-radius:16px; }
+  .slide.lg .card h3 { font-size:21px; margin-bottom:10px; }
+  .slide.lg .card p, .slide.lg .card li { font-size:18.5px; line-height:1.5; }
+  .slide.lg .card li { margin:6px 0; }
+  .slide.lg .callout { font-size:18px; padding-left:42px; margin:14px 0; }
+  .slide.lg .callout i { width:30px; height:30px; font-size:15px; }
+  .slide.lg .step { padding:16px 14px; }
+  .slide.lg .step b { font-size:17px; }
+  .slide.lg .step span { font-size:15px; }
+  .slide.lg table { font-size:17px; }
+  .slide.lg th, .slide.lg td { padding:11px 14px; }
+
+  .slide.md .card h3 { font-size:19px; }
+  .slide.md .card p, .slide.md .card li { font-size:16.5px; }
+  .slide.md .card { padding:16px 20px; }
+
+  .slide .agenda .callout { font-size:22px; margin:22px 0; padding-left:50px; }
+  .slide .agenda .callout i { width:34px; height:34px; font-size:17px; }
+  .slide.lg.active { display:flex; flex-direction:column; }
+  .slide.lg > .kicker { align-self:flex-start; }
+  .slide.lg .body { margin-top:auto; margin-bottom:auto; width:100%; }
+
+  @media print {
+    html, body { overflow:visible; height:auto; background:#fff; }
+    #viewport { position:static; display:block; } #nav { display:none; }
+    #stage { transform:none !important; width:1280px; height:auto; }
+    .slide { position:relative; display:block !important; height:720px; page-break-after:always; border-radius:0; animation:none; }
+    @page { size:1280px 720px; margin:0; }
+  }
+</style>
+</head>
+<body>
+<div id="viewport"><div id="stage">
+
+<!-- 1 PORTADA -->
+<section class="slide cover" data-title="Portada">
+  <span class="kicker">Sprint 4 · Sprint Review</span>
+  <h1>SmartBills Cleaner<br/>avance y resultados</h1>
+  <p class="lead">De la lectura de facturas a la búsqueda semántica con pgvector y las consultas en lenguaje natural con respuestas citadas (RAG), funcionando incluso sin servicios en la nube.</p>
+  <div class="kpis">
+    <div class="kpi"><b>23 SP</b><span>entregados (18 nuevos + 5 de cierre)</span></div>
+    <div class="kpi"><b>24 / 24</b><span>pruebas unitarias en verde</span></div>
+    <div class="kpi"><b>11 / 11</b><span>endpoints con p95 &lt; 4 s</span></div>
+    <div class="kpi"><b>0,69</b><span>RAGAS promedio (fidelidad 1,0)</span></div>
+  </div>
+  <div class="who">Miguel Rincón · Maestría en Desarrollo de IA · Trabajo de grado · Octubre 2026</div>
+</section>
+
+<!-- 3 RELEASE PLAN -->
+<section class="slide" data-title="Posición frente al Release Plan">
+  <span class="kicker">1 · Estado general</span>
+  <h2 class="title">Posición frente al Release Plan: Release 2 casi completo, Release 3 sin iniciar</h2>
+  <div class="body row">
+    <div style="width:560px">
+      <figure>
+        <img class="shot" src="../presentacion/img/release-plan.jpg" alt="Release Plan oficial" />
+        <figcaption>Release Plan oficial: R2 (sem. 9–16) y R3 (sem. 17–27).</figcaption>
+      </figure>
+    </div>
+    <div class="col">
+      <table>
+        <thead><tr><th>Bloque del plan</th><th>Estado</th></tr></thead>
+        <tbody>
+          <tr><td><b>Sem 9–10</b> · Upload S3, cola, OCR Textract</td><td><span class="chip part">Parcial</span><br/><span class="small">Carga y OCR locales; S3 y cola no</span></td></tr>
+          <tr><td><b>Sem 11–12</b> · Extracción y validación</td><td><span class="chip part">Casi completo</span><br/><span class="small">Falta CSV y medir precisión ≥ 90 %</span></td></tr>
+          <tr class="hl"><td><b>Sem 13–14</b> · Vectorización y BD vectorial</td><td><span class="chip ok">Hecho</span><br/><span class="small">pgvector; embedding propio, no Titan</span></td></tr>
+          <tr class="hl"><td><b>Sem 15–16</b> · NLP, búsqueda híbrida, RAGAS</td><td><span class="chip ok">Hecho con reservas</span><br/><span class="small">Calidad de ranking por mejorar</span></td></tr>
+          <tr><td><b>Release 3</b> · sem. 17–27 (5 bloques)</td><td><span class="chip gray">No iniciado</span></td></tr>
+        </tbody>
+      </table>
+      <div class="card soft" style="margin-top:12px">
+        <p><b>Lectura:</b> el Sprint 4 cubre lo que el plan reservaba para las semanas 13–16 (vectorización, NLP con citación, búsqueda híbrida y RAGAS). La demo «Release 2 · Momento 2» queda pendiente de presentar.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>SmartBills Cleaner · Sprint 4</span><span class="pn"></span></div>
+</section>
+
+<!-- 4 CRITERIOS R2 -->
+<section class="slide" data-title="Criterios del incremento Release 2">
+  <span class="kicker">1 · Estado general</span>
+  <h2 class="title">Incremento Release 2: 8 de 13 criterios cumplidos, 1 parcial y 4 pendientes</h2>
+  <p class="sub">Cada criterio sale de la columna «Incremento entregable» del Release Plan oficial.</p>
+  <div class="body g2">
+    <table>
+      <thead><tr><th>Criterio del plan</th><th>Estado</th></tr></thead>
+      <tbody>
+        <tr><td>Subida de archivos a S3</td><td><span class="chip no">Pendiente</span> disco local</td></tr>
+        <tr><td>Cola de jobs con reintentos</td><td><span class="chip no">Pendiente</span></td></tr>
+        <tr><td>OCR iniciado y con polling</td><td><span class="chip part">Parcial</span> OCR síncrono</td></tr>
+        <tr><td>Campos extraídos ≥ 90 % de precisión</td><td><span class="chip no">Pendiente</span> sin medir</td></tr>
+        <tr><td>Formulario de validación con confianza por campo</td><td><span class="chip ok">Cumplido</span></td></tr>
+        <tr><td>Listado con filtros</td><td><span class="chip ok">Cumplido</span> SBC-25</td></tr>
+        <tr><td>Exportación CSV</td><td><span class="chip no">Pendiente</span></td></tr>
+      </tbody>
+    </table>
+    <table>
+      <thead><tr><th>Criterio del plan</th><th>Estado</th></tr></thead>
+      <tbody>
+        <tr><td>pgvector configurado</td><td><span class="chip ok">Cumplido</span> SBC-15</td></tr>
+        <tr><td>Vectores generados después del OCR</td><td><span class="chip ok">Cumplido</span></td></tr>
+        <tr><td>Primeras consultas NLP respondiendo</td><td><span class="chip ok">Cumplido</span> SBC-17</td></tr>
+        <tr><td>Consultas NLP con citación</td><td><span class="chip ok">Cumplido</span> SBC-29</td></tr>
+        <tr><td>Búsqueda híbrida funcional</td><td><span class="chip ok">Cumplido</span> SBC-25</td></tr>
+        <tr><td>RAGAS faithfulness ≥ 0,85 documentado</td><td><span class="chip ok">Cumplido</span> 1,00 (métrica local)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="row" style="margin-top:14px">
+    <div class="card warn col"><p><b>Desviaciones del plan:</b> S3 + cola asíncrona + Textract, exportación CSV y medición de precisión de extracción siguen abiertas. Se proponen ajustes en la diapositiva 7.</p></div>
+    <div class="card col"><p><b>Matiz de RAGAS:</b> es una implementación propia en Node (sin LLM-juez), no el paquete Python oficial; sirve como línea base repetible.</p></div>
+  </div>
+  <div class="foot"><span>SmartBills Cleaner · Sprint 4</span><span class="pn"></span></div>
+</section>
+
+<!-- 5 SCRUM -->
+<section class="slide" data-title="Scrum aplicado">
+  <span class="kicker">2 · Metodología</span>
+  <h2 class="title">Scrum adaptado a un equipo de una persona</h2>
+  <p class="sub">Sprints de 3 semanas, capacidad de 20 SP y estimación calibrada: 1 SP ≈ 4 horas.</p>
+  <div class="body g3">
+    <div class="card"><h3>Roles</h3>
+      <ul>
+        <li><b>Product Owner:</b> prioriza el backlog (Jefferson Peña).</li>
+        <li><b>Scrum Master:</b> cuida ceremonias y DoD.</li>
+        <li><b>Desarrollo:</b> Miguel Rincón.</li>
+        <li><b>Interesados:</b> evaluación académica del trabajo de grado.</li>
+      </ul></div>
+    <div class="card"><h3>Eventos</h3>
+      <ul>
+        <li><b>Planning:</b> objetivo del sprint y tope de 20 SP.</li>
+        <li><b>Review y Retro:</b> documentadas en presentación y Confluence.</li>
+      </ul></div>
+    <div class="card"><h3>Artefactos</h3>
+      <ul>
+        <li><b>Product Backlog</b> en Jira (SBC-*), con SP y prioridad.</li>
+        <li><b>Sprint Backlog</b> con historias y subtareas.</li>
+        <li><b>Incremento</b> demostrable en Docker.</li>
+        <li><b>DoD</b> explícito por historia y por sprint.</li>
+      </ul></div>
+  </div>
+  <div class="body g2" style="margin-top:14px">
+    <div class="card soft"><h3>Prácticas de ingeniería ligadas a Scrum</h3>
+      <ul>
+        <li>Una rama por historia (<code>feature/sbc-15-…</code>) y commits con los códigos de Jira.</li>
+        <li>Pruebas unitarias como parte del DoD; evidencia guardada por sprint.</li>
+        <li>Documentación del stack real contra el código en cada review.</li>
+      </ul></div>
+    <div class="card warn"><h3>Límites asumidos</h3>
+      <ul>
+        <li>Sin pares: la revisión de código es autorrevisión.</li>
+        <li>Reuniones reducidas a registros escritos.</li>
+        <li>Velocidad medida sobre un solo desarrollador.</li>
+      </ul></div>
+  </div>
+  <div class="foot"><span>SmartBills Cleaner · Sprint 4</span><span class="pn"></span></div>
+</section>
+
+<!-- 7 SPRINT 4 OBJETIVO Y RESULTADO -->
+<section class="slide" data-title="Objetivo y resultado del sprint">
+  <span class="kicker">2 · Metodología</span>
+  <h2 class="title">Sprint 4: objetivo cumplido, 23 SP entregados sobre 20 comprometidos</h2>
+  <div class="card soft" style="margin-top:12px"><p style="font-size:14px"><b>Objetivo:</b> pasar de la búsqueda en memoria a búsqueda semántica real con pgvector y entregar consultas en lenguaje natural con respuestas citadas, sin depender de claves de nube.</p></div>
+  <div class="body">
+    <table>
+      <thead><tr><th>Historia</th><th>SP</th><th>Origen</th><th>Resultado</th></tr></thead>
+      <tbody>
+        <tr><td><b>SBC-15</b> Vectorización y BD vectorial</td><td>5</td><td>Planificada</td><td><span class="chip ok">Hecha</span></td></tr>
+        <tr><td><b>SBC-29</b> RAG (SBC-30, 31, 32)</td><td>5</td><td>Planificada</td><td><span class="chip ok">Hecha</span></td></tr>
+        <tr><td><b>SBC-23 / SBC-24</b> Citas por página y sanitizadas</td><td>2 + 3</td><td>Planificada (ya existían en código S3)</td><td><span class="chip ok">Cerradas con evidencia</span></td></tr>
+        <tr class="hl"><td><b>SBC-25</b> Búsqueda híbrida</td><td>5</td><td>Agregada en el sprint</td><td><span class="chip ok">Hecha</span></td></tr>
+        <tr class="hl"><td><b>SBC-17</b> Consultas en lenguaje natural</td><td>3</td><td>Agregada en el sprint</td><td><span class="chip ok">Hecha</span></td></tr>
+        <tr><td><b>SBC-8</b> OCR en nube opcional</td><td>—</td><td>Spike ampliado</td><td><span class="chip part">Parcial · sin credenciales</span></td></tr>
+        <tr><td><b>SBC-7</b> Soft-delete + auditoría</td><td>3</td><td>Condicionada a capacidad</td><td><span class="chip gray">Pasa al Sprint 5</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="row" style="margin-top:12px">
+    <div class="card col"><p><b>Lectura de la velocidad:</b> 18 SP son trabajo nuevo; los 5 SP de SBC-23/24 fueron cierre de algo ya implementado, por lo que el esfuerzo real fue menor que el nominal.</p></div>
+  </div>
+  <div class="foot"><span>SmartBills Cleaner · Sprint 4</span><span class="pn"></span></div>
+</section>
+
+<!-- 8 PRODUCT BACKLOG -->
+<section class="slide" data-title="Product Backlog actualizado">
+  <span class="kicker">3 · Backlog y release plan</span>
+  <h2 class="title">Product Backlog actualizado: qué se cierra, qué se corrige y qué sigue</h2>
+  <div class="body g3">
+    <div class="card good"><h3>Cerrar como Done</h3>
+      <ul>
+        <li><b>SBC-15</b> Vectorización (5 SP)</li>
+        <li><b>SBC-29</b> RAG + SBC-30/31/32</li>
+        <li><b>SBC-25</b> Búsqueda híbrida (5 SP)</li>
+        <li><b>SBC-17</b> Consultas NL (3 SP)</li>
+        <li><b>SBC-23 / 24</b> Citas</li>
+      </ul>
+      <p class="small" style="margin-top:8px">Se corrigieron descripciones: pgvector HNSW, <code>hashed-bow-96-v2</code> (no SBERT).</p></div>
+    <div class="card warn"><h3>Corregir sin reabrir</h3>
+      <ul>
+        <li><b>SBC-8</b> OCR: camino feliz local; Document AI y Textract opcionales; sin SQS.</li>
+        <li><b>SBC-9 / 10:</b> Textract cableado sin clave = no se llama; SQS pendiente.</li>
+        <li>Quitar referencias a Next.js, S3 y borrado lógico donde no aplican.</li>
+      </ul></div>
+    <div class="card"><h3>Sigue en backlog</h3>
+      <table style="font-size:11.5px;margin-top:4px">
+        <tr><td><b>SBC-53</b> Documentar stack</td><td>2 · Should</td></tr>
+        <tr><td><b>SBC-47</b> Dashboard en COP</td><td>5 · Should</td></tr>
+        <tr><td><b>SBC-7</b> Soft-delete</td><td>3 · Could</td></tr>
+        <tr><td><b>SBC-43</b> Reescribir criterios</td><td>8 · Won’t S4</td></tr>
+        <tr><td>Spike ONNX embeddings</td><td>2 · Could</td></tr>
+        <tr><td>Spike OCR nube</td><td>2 · Could</td></tr>
+      </table></div>
+  </div>
+  <div class="card soft" style="margin-top:14px"><h3>Ítems nuevos propuestos por los hallazgos del sprint</h3>
+    <div class="g3" style="margin-top:4px">
+      <p><b>Mejorar el ranking:</b> sumar solapamiento léxico a <code>/invoices/search</code> y reordenar el Top-5 (≈ 3 SP · Must).</p>
+      <p><b>Pruebas E2E mínimas:</b> cargar → buscar → consultar (≈ 3 SP · Should).</p>
+      <p><b>Alinear Jira con el stack real:</b> tareas de limpieza de tickets antiguos (≈ 1 SP · Should).</p>
+    </div></div>
+  <div class="foot"><span>SmartBills Cleaner · Sprint 4</span><span class="pn"></span></div>
+</section>
+
+<!-- 9 RELEASE PLAN ACTUALIZADO -->
+<section class="slide" data-title="Release Plan actualizado">
+  <span class="kicker">3 · Backlog y release plan</span>
+  <h2 class="title">Release Plan: ajustes propuestos para llegar a la demo de Release 2</h2>
+  <p class="sub">Propuesta para validar: no cambia el alcance de Release 3, solo reubica lo que quedó abierto de Release 2.</p>
+  <div class="body">
+    <table>
+      <thead><tr><th>Elemento</th><th>Plan original</th><th>Situación actual</th><th>Ajuste propuesto</th></tr></thead>
+      <tbody>
+        <tr><td><b>Upload S3 + cola con reintentos</b></td><td>R2 · sem. 9–10</td><td>Disco local, OCR síncrono</td><td>Mover a bloque de endurecimiento en R3 o descartar si no hay cuenta AWS (decisión pendiente)</td></tr>
+        <tr><td><b>OCR Textract</b></td><td>R2 · sem. 9–10</td><td>Ramal opcional sin credenciales</td><td>Spike de 15 PDF (Document AI vs Textract) en Sprint 5</td></tr>
+        <tr><td><b>Precisión de extracción ≥ 75 %</b></td><td>R2 · sem. 11–12</td><td>No medida</td><td>Medir en el mismo spike y fijarla como criterio de cierre de R2</td></tr>
+        <tr><td><b>Exportación CSV</b></td><td>R2 · sem. 11–12</td><td>Pendiente</td><td>Unirla a US-13 (CSV/XLSX) de R3 · sem. 17–18</td></tr>
+        <tr><td><b>Embeddings Titan</b></td><td>R2 · sem. 13–14</td><td>Embedding propio de 96 dim.</td><td>Mantener para MVP; spike de modelo multilingüe pequeño (ONNX)</td></tr>
+        <tr class="hl"><td><b>RAGAS ≥ 0,85</b></td><td>R2 · sem. 15–16</td><td>Fidelidad 1,00; precisión 0,44; relevancia 0,31</td><td>Añadir metas de precisión y relevancia (≥ 0,60 y ≥ 0,50) para el Sprint 5</td></tr>
+        <tr class="hl"><td><b>Demo Release 2 · Momento 2</b></td><td>R2 · sem. 15–16</td><td>Pendiente de presentar</td><td>Presentarla tras corregir el ranking de búsqueda</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="foot"><span>SmartBills Cleaner · Sprint 4</span><span class="pn"></span></div>
+</section>
+
+<!-- 10 HISTORIAS I -->
+<section class="slide" data-title="Historias integradas I">
+  <span class="kicker">4 · Historias integradas y DoD</span>
+  <h2 class="title">Historias integradas (1/2): vectorización y RAG</h2>
+  <div class="body g2">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between"><h3>SBC-15 · Vectorización y BD vectorial</h3><span class="chip ok">5 SP · Hecha</span></div>
+      <p style="margin:6px 0"><i>Como sistema, quiero vectorizar cada factura procesada para habilitar búsquedas semánticas rápidas.</i></p>
+      <p><b>Qué se hizo:</b> columna <code>vector(96)</code> con índice HNSW en PostgreSQL + pgvector; indexación automática al guardar y reindexado si cambia el modelo; seed DEMO-VEC-01…06.</p>
+      <ul>
+        <li>✓ Indexación sin pasos manuales en la interfaz</li>
+        <li>✓ Reindexado automático por modelo obsoleto</li>
+        <li>✓ Dimensión validada (96)</li>
+        <li>✓ 3 pruebas unitarias en verde</li>
+        <li>✓ Consulta Top-5 en 20.000 vectores: 0,55 ms</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between"><h3>SBC-29 · RAG (SBC-30 / 31 / 32)</h3><span class="chip ok">5 SP · Hecha</span></div>
+      <p style="margin:6px 0"><i>Como usuario, quiero respuestas ancladas a fragmentos de mis facturas, con su origen citado.</i></p>
+      <p><b>Qué se hizo:</b> retriever + cadena LangChain, Top-K = 5, prompt few-shot en español, consenso base/ajustado (Bedrock si hay claves, local si no), citas saneadas y evaluación RAGAS.</p>
+      <ul>
+        <li>✓ Formato <code>[Factura X, pág. Y]</code> y citas inventadas descartadas</li>
+        <li>✓ Funciona sin ninguna clave de nube</li>
+        <li>✓ Sin evidencia: no inventa documentos</li>
+        <li>✓ 3 pruebas + <code>npm run eval:ragas</code></li>
+        <li>◐ Precisión de contexto y relevancia por mejorar</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot"><span>SmartBills Cleaner · Sprint 4</span><span class="pn"></span></div>
+</section>
+
+<!-- 11 HISTORIAS II -->
+<section class="slide" data-title="Historias integradas II">
+  <span class="kicker">4 · Historias integradas y DoD</span>
+  <h2 class="title">Historias integradas (2/2): búsqueda, consultas y OCR opcional</h2>
+  <div class="body g3">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between"><h3>SBC-25 · Búsqueda híbrida</h3><span class="chip ok">5 SP</span></div>
+      <p style="margin:6px 0"><i>Buscar facturas por texto, proveedor, fechas y montos.</i></p>
+      <p><b>Qué se hizo:</b> filtros SQL primero y ranking semántico después; <code>GET /api/invoices/search</code>; formulario avanzado.</p>
+      <ul>
+        <li>✓ Filtros combinables</li>
+        <li>✓ Modo, latencia y SLA en la respuesta</li>
+        <li>✓ 2 pruebas · p95 ≈ 5 ms</li>
+        <li>◐ Ranking solo semántico (ver hallazgo)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between"><h3>SBC-17 · Consultas NL</h3><span class="chip ok">3 SP</span></div>
+      <p style="margin:6px 0"><i>Preguntar en español y ver de dónde sale cada dato.</i></p>
+      <p><b>Qué se hizo:</b> respuesta citada, fragmentos clicables, Top-5 siempre visible, estado «sin evidencia» y latencia en pantalla.</p>
+      <ul>
+        <li>✓ Caso Madrid sin evidencia</li>
+        <li>✓ Top-5 (N de 5) con puntaje</li>
+        <li>✓ Latencia y marca «dentro de 4 s»</li>
+        <li>✓ Filtros avanzados en la consulta</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between"><h3>SBC-8 · OCR en nube</h3><span class="chip part">Parcial</span></div>
+      <p style="margin:6px 0"><i>Leer facturas escaneadas sin digitar a mano.</i></p>
+      <p><b>Qué se hizo:</b> nativo → Document AI → Textract → Tesseract. Sin claves, o si falla, se omite el ramal.</p>
+      <ul>
+        <li>✓ Nunca bloquea la carga</li>
+        <li>✓ 4 pruebas unitarias</li>
+        <li>✗ Sin validar con credenciales</li>
+        <li>✗ Sin SQS (fuera de alcance)</li>
+      </ul>
+    </div>
+  </div>
+  <div class="card soft" style="margin-top:14px"><p><b>Registro de trabajo:</b> una rama por historia, apiladas para evitar conflictos — <code>sbc-15 → sbc-29 → sbc-25 → sbc-17 → sbc-8 → s4-docs → s4-metricas</code>.</p></div>
+  <div class="foot"><span>SmartBills Cleaner · Sprint 4</span><span class="pn"></span></div>
+</section>
+
+<!-- 12 DOD -->
+<section class="slide" data-title="Definition of Done del sprint">
+  <span class="kicker">4 · Historias integradas y DoD</span>
+  <h2 class="title">Definition of Done del sprint: qué se cumplió y qué no</h2>
+  <div class="body g2">
+    <div class="card good"><h3>Cumplido</h3>
+      <ul>
+        <li>✓ Código en rama por historia, con commits que citan Jira</li>
+        <li>✓ Pruebas unitarias en verde (24/24)</li>
+        <li>✓ Funciona sin claves de servicios externos</li>
+        <li>✓ Variables de entorno documentadas (<code>.env.example</code>, Compose)</li>
+        <li>✓ Latencia medida frente al objetivo de 4 s</li>
+        <li>✓ Evidencia guardada (informe, JSON, capturas)</li>
+        <li>✓ Decisiones técnicas registradas (ADR)</li>
+        <li>✓ Stack real documentado contra el código</li>
+      </ul></div>
+    <div class="card warn"><h3>No cumplido (declarado)</h3>
+      <ul>
+        <li>✗ Pruebas E2E de frontend: no existen</li>
+        <li>✗ Medición con Bedrock real</li>
+        <li>✗ Medición con Document AI / Textract</li>
+        <li>✗ Precisión de extracción de campos (≥ 90 %)</li>
+        <li>✗ Revisión por pares</li>
+      </ul>
+      <p class="small" style="margin-top:10px">Se arrastran como acciones al Sprint 5; ninguna impide el uso local del sistema.</p></div>
+  </div>
+  <div class="foot"><span>SmartBills Cleaner · Sprint 4</span><span class="pn"></span></div>
+</section>
+
+<!-- 14 ADR -->
+<section class="slide" data-title="Decisiones técnicas">
+  <span class="kicker">5 · Decisiones técnicas, pruebas y resultados</span>
+  <h2 class="title">Decisiones técnicas del sprint y sus consecuencias</h2>
+  <div class="body g3">
+    <div class="card"><h3>ADR-01 · pgvector en vez de JSON</h3><p>Similitud en SQL con índice HNSW. Exige imagen Docker con pgvector.</p></div>
+    <div class="card"><h3>ADR-02 · Embedding propio (no SBERT)</h3><p>Bolsa de palabras hasheada de 96 dim., sin costo ni descargas. Calidad semántica limitada; spike ONNX pendiente.</p></div>
+    <div class="card"><h3>ADR-03 · LangChain 1.x sin RetrievalQAChain</h3><p>La clase clásica ya no existe: <code>RunnableSequence</code> + retriever propio. Equivalente funcional.</p></div>
+    <div class="card"><h3>ADR-04 · Consenso con respaldo local</h3><p>Bedrock (Nova Lite/Pro) si hay claves; si no, grounded top-1/top-3. Nunca depende de una API externa.</p></div>
+    <div class="card"><h3>ADR-05 · RAGAS propio en Node</h3><p>Repetible y sin costo, pero no comparable 1 a 1 con el paquete Python con LLM-juez.</p></div>
+    <div class="card"><h3>ADR-06 · OCR local primero, nube opcional</h3><p>Nativo → nube → Tesseract. Sin SQS ni asincronía en este sprint.</p></div>
+  </div>
+  <div class="card soft" style="margin-top:14px"><h3>ADR-07 · Búsqueda: SQL primero, vectores después</h3><p>Se reduce el universo con filtros estructurados antes de ordenar por similitud. <b>Consecuencia observada:</b> el ranking de la búsqueda de facturas usa solo similitud semántica; el solapamiento léxico solo está en la ruta RAG (ver hallazgo en la diapositiva 17).</p></div>
+  <div class="foot"><span>SmartBills Cleaner · Sprint 4</span><span class="pn"></span></div>
+</section>
+
+<!-- 15 PRUEBAS -->
+<section class="slide" data-title="Pruebas">
+  <span class="kicker">5 · Decisiones técnicas, pruebas y resultados</span>
+  <h2 class="title">Pruebas: 24 de 24 unitarias en verde (corrida fresca: 552 ms)</h2>
+  <div class="body row">
+    <div class="col">
+      <div class="bars">
+        <div class="r"><span class="n">OCR y extracción de campos</span><div class="t"><i class="g" style="width:100%"></i></div><span class="v">14 PASS</span></div>
+        <div class="r"><span class="n">pgvector (vectorStore)</span><div class="t"><i class="g" style="width:21%"></i></div><span class="v">3 PASS</span></div>
+        <div class="r"><span class="n">RAG: prompt, consenso, RAGAS</span><div class="t"><i class="g" style="width:21%"></i></div><span class="v">3 PASS</span></div>
+        <div class="r"><span class="n">Búsqueda híbrida</span><div class="t"><i class="g" style="width:14%"></i></div><span class="v">2 PASS</span></div>
+        <div class="r"><span class="n">Documento y citas</span><div class="t"><i class="g" style="width:14%"></i></div><span class="v">2 PASS</span></div>
+      </div>
+      <div class="card" style="margin-top:14px"><h3>Qué comprueban</h3>
+        <ul>
+          <li>Extracción de NIT, montos y fechas colombianas sobre un PDF real de muestra.</li>
+          <li>Serialización y dimensión de embeddings; similitud coherente entre dominios.</li>
+          <li>Prompt con few-shot y citas; el consenso prefiere la respuesta más fiel.</li>
+          <li>OCR en nube: sin claves no se activa y nunca lanza error.</li>
+        </ul></div>
+    </div>
+    <div style="width:360px">
+      <div class="card dark" style="text-align:center;padding:26px 16px">
+        <div style="font-size:70px;font-weight:800;color:#7fe0cf;line-height:1">24/24</div>
+        <p style="margin-top:8px;font-size:14px">pruebas PASS · 0 fallos</p>
+      </div>
+      <div class="card warn" style="margin-top:12px"><h3>Lo que no cubren</h3>
+        <ul><li>Frontend ni flujos E2E</li><li>Bedrock, Document AI y Textract reales</li><li>Calidad del ranking con datos variados</li></ul></div>
+    </div>
+  </div>
+  <div class="foot"><span>SmartBills Cleaner · Sprint 4</span><span class="pn"></span></div>
+</section>
+
+<!-- 16 RENDIMIENTO -->
+<section class="slide" data-title="Resultados de rendimiento">
+  <span class="kicker">5 · Decisiones técnicas, pruebas y resultados</span>
+  <h2 class="title">Rendimiento: todos los endpoints con p95 muy por debajo de 4 s</h2>
+  <p class="sub">20 iteraciones por endpoint tras calentamiento · Docker local · 14 facturas / 26 chunks · 0 errores. Barras relativas al endpoint más lento.</p>
+  <div class="body row">
+    <div class="col bars">
+      <div class="r"><span class="n">POST /auth/login (bcrypt)</span><div class="t"><i style="width:100%"></i></div><span class="v">91,9 ms</span></div>
+      <div class="r"><span class="n">GET /invoices</span><div class="t"><i style="width:5.4%"></i></div><span class="v">5,0 ms</span></div>
+      <div class="r"><span class="n">GET /dashboard/summary</span><div class="t"><i style="width:4.7%"></i></div><span class="v">4,3 ms</span></div>
+      <div class="r"><span class="n">Búsqueda · solo filtros SQL</span><div class="t"><i style="width:3.9%"></i></div><span class="v">3,6 ms</span></div>
+      <div class="r"><span class="n">Búsqueda · texto + pgvector</span><div class="t"><i style="width:5.5%"></i></div><span class="v">5,1 ms</span></div>
+      <div class="r"><span class="n">Búsqueda · filtros + texto</span><div class="t"><i style="width:5.7%"></i></div><span class="v">5,2 ms</span></div>
+      <div class="r"><span class="n">Consulta RAG (5 preguntas)</span><div class="t"><i style="width:6.4%"></i></div><span class="v">4,2–5,9 ms</span></div>
+      <p class="small" style="margin-top:8px">Valores p95. SLA del sprint: 4.000 ms.</p>
+    </div>
+    <div style="width:400px" class="g2">
+      <div class="card"><div class="big">363/s</div><p class="small">10 búsquedas semánticas simultáneas · p95 24,6 ms</p></div>
+      <div class="card"><div class="big">0,55 ms</div><p class="small">HNSW con 20.000 vectores (sin índice: 1,99 ms)</p></div>
+      <div class="card"><div class="big">25 ms</div><p class="small">carga de PDF con texto nativo</p></div>
+      <div class="card"><div class="big">324 ms</div><p class="small">imagen PNG con Tesseract</p></div>
+    </div>
+  </div>
+  <div class="card warn" style="margin-top:12px"><p><b>Cómo leerlo:</b> mediciones locales con un usuario y pocos datos; demuestran el cumplimiento del SLA y la ausencia de errores, no la capacidad en producción. La escala de pgvector se probó con vectores sintéticos en una tabla temporal.</p></div>
+  <div class="foot"><span>SmartBills Cleaner · Sprint 4</span><span class="pn"></span></div>
+</section>
+
+<!-- 17 RAGAS -->
+<section class="slide" data-title="Calidad del RAG">
+  <span class="kicker">5 · Decisiones técnicas, pruebas y resultados</span>
+  <h2 class="title">Calidad del RAG: fiel y completo, pero poco preciso y poco relevante</h2>
+  <div class="body g4">
+    <div class="card gauge"><div class="ring" style="--p:100"><b>1,00</b></div><strong>Faithfulness</strong><small>respuestas apoyadas en citas</small></div>
+    <div class="card gauge"><div class="ring" style="--p:100"><b>1,00</b></div><strong>Context recall</strong><small>la evidencia correcta entra al Top-5</small></div>
+    <div class="card gauge"><div class="ring weak" style="--p:44"><b>0,44</b></div><strong>Context precision</strong><small>el Top-5 trae fragmentos de relleno</small></div>
+    <div class="card gauge"><div class="ring weak" style="--p:31"><b>0,31</b></div><strong>Answer relevancy</strong><small>no siempre entrega el dato pedido</small></div>
+  </div>
+  <div class="body row">
+    <div class="col">
+      <table>
+        <thead><tr><th>Caso</th><th>Precision</th><th>Relevancy</th><th>RAGAS</th></tr></thead>
+        <tbody>
+          <tr><td>enel-energia</td><td>0,40</td><td>0,33</td><td><b>0,68</b></td></tr>
+          <tr><td>aguas-nit</td><td>1,00</td><td>0,38</td><td><b>0,85</b></td></tr>
+          <tr><td>papeleria</td><td>0,40</td><td>0,44</td><td><b>0,71</b></td></tr>
+          <tr><td>claro-plan</td><td>0,40</td><td>0,24</td><td><b>0,66</b></td></tr>
+          <tr><td>sin-evidencia</td><td>0,00</td><td>0,17</td><td><b>0,54</b></td></tr>
+          <tr class="hl"><td><b>Promedio</b></td><td><b>0,44</b></td><td><b>0,31</b></td><td><b>0,69</b></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="width:430px" class="card warn">
+      <h3>Lectura honesta</h3>
+      <p>Para «¿cuánto pagué de energía?» el generador local devuelve la línea más cercana («Servicio de energía eléctrica…») y no el monto. La fidelidad es perfecta porque nunca inventa, pero eso no basta: hay que mejorar el ranking del Top-5 y probar generación con Bedrock.</p>
+    </div>
+  </div>
+  <div class="foot"><span>SmartBills Cleaner · Sprint 4</span><span class="pn"></span></div>
+</section>
+
+<!-- 18 EVIDENCIA BUSQUEDA -->
+<section class="slide" data-title="Evidencia: búsqueda híbrida">
+  <span class="kicker">6 · Evidencias</span>
+  <h2 class="title">Evidencia 1 · Búsqueda avanzada: texto + filtros SQL con ranking semántico (SBC-25)</h2>
+  <div class="body row">
+    <div style="width:780px">
+      <figure>
+        <img class="shot" src="capturas/s4-02-busqueda-enel-filtro.png" alt="Búsqueda avanzada con ranking por relevancia" />
+        <figcaption>Consulta «Enel energia kWh» con monto mínimo de 100.000 COP: modo <b>sql+pgvector</b>, Enel en primer lugar (0,37).</figcaption>
+      </figure>
+    </div>
+    <div class="col">
+      <div class="callout"><i>1</i>Formulario con texto libre, proveedor, estado, fechas y rango de montos.</div>
+      <div class="callout"><i>2</i><b>Filtros SQL primero:</b> solo quedan facturas ≥ 100.000 COP.</div>
+      <div class="callout"><i>3</i><b>Ranking semántico</b> sobre el conjunto filtrado, con puntaje de relevancia y la página que coincide.</div>
+      <div class="callout"><i>4</i>El encabezado muestra el modo y la latencia de la consulta.</div>
+      <div class="card soft" style="margin-top:10px"><p class="small">Caso real, tomado de la app en Docker. Ver el contraejemplo con una consulta genérica en la diapositiva 17.</p></div>
+    </div>
+  </div>
+  <div class="foot"><span>SmartBills Cleaner · Sprint 4</span><span class="pn"></span></div>
+</section>
+
+<!-- 19 EVIDENCIA CONSULTAS -->
+<section class="slide" data-title="Evidencia: consultas con citas">
+  <span class="kicker">6 · Evidencias</span>
+  <h2 class="title">Evidencia 2 · Consulta en lenguaje natural con citas (SBC-17)</h2>
+  <div class="body g2">
+    <figure>
+      <img class="shot" src="capturas/s4-03-consulta-rag-citas.png" alt="Respuesta RAG con citas y Top-5" />
+      <figcaption><b>Con evidencia:</b> «Top-5 · 16 ms · dentro de 4 s · consenso base (local)», cita <code>[Factura DEMO-VEC-05, pág. 1]</code> y fragmentos con <code>chunk_source</code> y puntaje.</figcaption>
+    </figure>
+    <figure>
+      <img class="shot" src="capturas/s4-04-sin-evidencia.png" alt="Estado sin evidencia verificable" />
+      <figcaption><b>Sin evidencia:</b> la pregunta sobre un arriendo en Madrid responde «Sin evidencia verificable», 0 de 5 fragmentos y 8 ms. No inventa facturas.</figcaption>
+    </figure>
+  </div>
+  <div class="card soft" style="margin-top:12px"><p><b>DoD de SBC-17 visible en pantalla:</b> respuesta citada · fragmentos Top-5 (N de 5) · estado vacío explícito · latencia y marca de SLA.</p></div>
+  <div class="foot"><span>SmartBills Cleaner · Sprint 4</span><span class="pn"></span></div>
+</section>
+
+<!-- 21 HALLAZGO -->
+<section class="slide" data-title="Hallazgo: ranking de búsqueda">
+  <span class="kicker">6 · Evidencias · hallazgo</span>
+  <h2 class="title">Hallazgo del sprint: con una consulta genérica el ranking falla</h2>
+  <div class="body row">
+    <div style="width:700px">
+      <figure>
+        <img class="shot" src="capturas/s4-01b-resultados.png" alt="Ranking con consulta genérica" />
+        <figcaption>Consulta «energia electrica»: Enel (DEMO-VEC-05) queda 4.ª con 0,24 y una página de «Impuestos y totales» de otra factura queda 1.ª con 0,33.</figcaption>
+      </figure>
+    </div>
+    <div class="col">
+      <div class="card bad"><h3>Causa</h3>
+        <ul>
+          <li>La búsqueda de facturas ordena <b>solo por similitud coseno</b>; el solapamiento léxico existe únicamente en la ruta RAG.</li>
+          <li>El embedding de 96 dimensiones <b>colisiona</b> con términos genéricos.</li>
+        </ul></div>
+      <div class="card good" style="margin-top:10px"><h3>Acción</h3>
+        <ul>
+          <li>Aplicar la misma puntuación híbrida (0,55 semántico + 0,45 léxico) a <code>/invoices/search</code>.</li>
+          <li>Ampliar los casos de evaluación y reordenar el Top-5.</li>
+          <li>Spike de embedding multilingüe pequeño.</li>
+        </ul></div>
+      <p class="small" style="margin-top:10px">Se muestra a propósito: los datos controlados de la demo ocultaban este problema.</p>
+    </div>
+  </div>
+  <div class="foot"><span>SmartBills Cleaner · Sprint 4</span><span class="pn"></span></div>
+</section>
+
+<!-- 22 RIESGOS -->
+<section class="slide" data-title="Riesgos y deuda técnica">
+  <span class="kicker">7 · Riesgos y deuda técnica</span>
+  <h2 class="title">Riesgos y deuda técnica</h2>
+  <div class="body row">
+    <div class="col">
+      <table>
+        <thead><tr><th>Riesgo</th><th>Nivel</th><th>Mitigación</th></tr></thead>
+        <tbody>
+          <tr><td>Ranking de búsqueda poco fiable con consultas genéricas</td><td><span class="chip no">Alto</span></td><td>Puntuación híbrida y más casos</td></tr>
+          <tr><td>Embeddings hasheados limitan la semántica</td><td><span class="chip part">Medio</span></td><td>Spike ONNX multilingüe</td></tr>
+          <tr><td>RAG sin medir con Bedrock real</td><td><span class="chip part">Medio</span></td><td>Medir con credenciales</td></tr>
+          <tr><td>OCR en nube sin validar</td><td><span class="chip part">Medio</span></td><td>Spike con 15 PDF</td></tr>
+          <tr><td>Dataset pequeño, sin prueba de carga real</td><td><span class="chip part">Medio</span></td><td>Más datos reales</td></tr>
+          <tr><td>Sin pruebas E2E de frontend</td><td><span class="chip part">Medio</span></td><td>E2E mínimas en Sprint 5</td></tr>
+          <tr><td>Credenciales en variables de entorno</td><td><span class="chip info">Bajo</span></td><td><code>.env</code> fuera de Git</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="width:380px">
+      <div class="card warn"><h3>Deuda técnica</h3>
+        <ul>
+          <li>Borrado físico en vez de soft-delete (SBC-7)</li>
+          <li>Archivos en disco local, no en S3</li>
+          <li>Sin SQS ni procesamiento asíncrono</li>
+          <li>Dashboard con «insights simulados» y botones sin función (SBC-47)</li>
+          <li>Tickets antiguos de Jira describen otro stack</li>
+          <li>Entorno Docker frágil: cliente Prisma y volumen de <code>node_modules</code></li>
+        </ul></div>
+    </div>
+  </div>
+  <div class="foot"><span>SmartBills Cleaner · Sprint 4</span><span class="pn"></span></div>
+</section>
+
+<!-- 23 SIGUIENTES PASOS -->
+<section class="slide" data-title="Siguientes pasos">
+  <span class="kicker">7 · Siguientes pasos</span>
+  <h2 class="title">Sprint 5: mejorar la calidad y cerrar lo que quedó abierto de Release 2</h2>
+  <div class="body g3">
+    <div class="card"><h3>Calidad de búsqueda y RAG</h3>
+      <ul><li>Ranking híbrido en <code>/invoices/search</code></li><li>Reordenar el Top-5</li><li>Medir Bedrock con credenciales</li><li>Metas: precisión ≥ 0,60 y relevancia ≥ 0,50</li></ul></div>
+    <div class="card"><h3>Cierre de Release 2</h3>
+      <ul><li>Spike OCR: Document AI vs Textract (15 PDF)</li><li>Medir precisión de extracción</li><li>Decidir S3 y cola asíncrona</li><li>Presentar la demo «Release 2»</li></ul></div>
+    <div class="card"><h3>Producto y calidad</h3>
+      <ul><li>SBC-47 dashboard en COP</li><li>SBC-7 soft-delete y auditoría</li><li>Pruebas E2E mínimas</li><li>Alinear tickets de Jira con el stack real</li></ul></div>
+  </div>
+  <div class="card dark" style="margin-top:18px;padding:22px 26px">
+    <h3 style="font-size:17px">Conclusión</h3>
+    <p style="font-size:14.5px;margin-top:6px">El Sprint 4 entrega el núcleo inteligente del producto: indexación vectorial, búsqueda y consultas con evidencia verificable, probado y medido. La siguiente etapa no es agregar más funciones, sino <b>subir la calidad de lo que ya existe</b> y cerrar los pendientes del Release 2 antes de entrar al Release 3.</p>
+  </div>
+  <div class="foot"><span>SmartBills Cleaner · Sprint 4</span><span class="pn"></span></div>
+</section>
+
+</div></div>
+
+<div id="nav">
+  <button id="prev">← Anterior</button>
+  <div id="bar"><i id="prog"></i></div>
+  <span id="ttl"></span>
+  <button id="next">Siguiente →</button>
+</div>
+
+<script>
+  const slides = [...document.querySelectorAll(".slide")];
+  const stage = document.getElementById("stage");
+  const LG=[8,10,12,18,19], MD=[9,11];
+  document.querySelectorAll('.slide').forEach((el,i)=>{ if(LG.includes(i+1)) el.classList.add('lg'); if(MD.includes(i+1)) el.classList.add('md'); });
+  slides.forEach((el,i)=>{ const pn=el.querySelector('.pn'); if(pn) pn.textContent=i+1; });
+  let cur = Math.max(0, (parseInt(location.hash.replace("#", ""), 10) || 1) - 1);
+
+  function fit() {
+    const w = window.innerWidth, h = window.innerHeight - 54;
+    const s = Math.min(w / 1280, h / 720) * 0.98;
+    stage.style.transform = "scale(" + s + ")";
+  }
+  function show(i) {
+    cur = Math.max(0, Math.min(slides.length - 1, i));
+    slides.forEach((el, n) => el.classList.toggle("active", n === cur));
+    document.getElementById("prog").style.width = ((cur + 1) / slides.length) * 100 + "%";
+    document.getElementById("ttl").textContent = (cur + 1) + " / " + slides.length + " · " + (slides[cur].dataset.title || "");
+    document.getElementById("prev").disabled = cur === 0;
+    document.getElementById("next").disabled = cur === slides.length - 1;
+    history.replaceState(null, "", "#" + (cur + 1));
+  }
+  document.getElementById("prev").onclick = () => show(cur - 1);
+  document.getElementById("next").onclick = () => show(cur + 1);
+  document.addEventListener("keydown", (e) => {
+    if (["ArrowRight", "PageDown", " ", "Enter"].includes(e.key)) { e.preventDefault(); show(cur + 1); }
+    if (["ArrowLeft", "PageUp", "Backspace"].includes(e.key)) { e.preventDefault(); show(cur - 1); }
+    if (e.key === "Home") show(0);
+    if (e.key === "End") show(slides.length - 1);
+  });
+  window.addEventListener("resize", fit);
+  fit(); show(cur);
+</script>
+</body>
+</html>

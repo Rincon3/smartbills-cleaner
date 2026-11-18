@@ -1,0 +1,54 @@
+Issue ID,Issue Type,Summary,Description,Story Points,Priority,Sprint,Labels,Labels,Labels,Labels
+101,Story,"[X-01] Spike Educate: Bedrock texto, S3 y hosting","Como tesista, quiero saber si Bedrock tiene un modelo de generacion de texto, si S3 deja crear bucket y si Lightsail/EC2 sobrevive al End Lab, para decidir RAG con LLM y el plan de TK-04.
+
+No re-probar Textract (no disponible) ni embeddings (Titan v2 ON_DEMAND ya verificado en us-east-2).
+
+Checklist us-east-2: (1) list-foundation-models TEXT sin embed + perfiles; (2) crear/borrar bucket S3; (3) Lightsail o EC2 y si Vocareum borra la VM al logout.
+
+Hosting vs Bedrock: Plan A = rol IAM de la VM; Plan B = clave persistente en el PaaS; nunca keys de Vocareum. Si no hay rol ni clave persistente, Titan y el LLM quedan en modo degradado.
+
+DoD: docs/sprint-5/aws-educate-inventario.md (3 filas) + PLAN_* en docs/adr/001-hosting-plan-a-b.md. Cero recursos huerfanos. Dia 1 del S5.
+
+Criterios de aceptacion
+- Exito: el inventario tiene las 3 filas (modelo de texto o ninguno, S3, hosting) y el ADR tiene un PLAN_*.
+- Error: ExpiredToken o AccessDenied se anotan; no se inventan permisos.
+- Permiso: no aplica.",1,Highest,S5,nucleo,x-01,,
+102,Story,[DOC-01] Paquete de evidencia Scrum del Sprint 5,"Como tesista, quiero registrar velocidad, burndown, review y retro del S5 en el mismo sprint para no reconstruir la seccion 5 del TI3 al final.
+
+Plantilla: docs/sprint-5/eval/sprint-evidence.template.md copiar a docs/sprint-5/evidencia-sprint.md el dia 1. Cierre: velocidad, burndown, 3 notas tipo daily, review, retro (1 ok / 1 cambiar / 1 accion), matriz de las historias tecnicas del S5.
+
+Criterios de aceptacion
+- Exito: evidencia-sprint.md tiene el compromiso el dia 1 y velocidad, burndown y retro al cierre.
+- Error: si Jira no tiene burndown, la tabla semanal de la plantilla esta llena (no en blanco).",1,Highest,S5,ti3,doc-01,seccion-5,nucleo
+103,Story,[US-04] Embeddings Titan v2 dim 1024 y reindex,"Como sistema, quiero embeddings amazon.titan-embed-text-v2:0 de 1024 dimensiones para que la busqueda y el RAG ordenen por significado.
+
+Excel US-04. El plan v2 pedia 1536 (Titan v1): desvio documentado.
+
+Antes de migrar: llenar ranking hash en docs/sprint-5/eval/queries-hash-vs-titan.csv. Migracion: recrear columna vector(1024) (no CAST 96 a 1024), HNSW cosine, reindex. No mezclar hash y Titan. ONNX no entra en S5.
+
+Criterios de aceptacion
+- Exito: se mide y se reporta el ranking hash vs Titan (tabla de 16 consultas) y el modelo/dimension usados tras el reindex.
+- Error: si Bedrock no responde, no se mezclan dimensiones (modo degradado o error controlado) y el resultado se documenta.
+
+Meta, no criterio de aceptacion: Enel (DEMO-VEC-05) en top-3 con la consulta energia electrica.",5,Highest,S5,excel-us-04,nucleo,,
+104,Story,[US-01][US-02] Evaluacion OCR en 10-12 facturas reales,"Como tesista, quiero medir precision por campo sobre 10-12 facturas reales etiquetadas.
+
+Excel US-01 crit.2 y US-02 crit.1. Plantillas: docs/sprint-5/eval/ocr-gold.template.csv y ocr-pred.template.csv. Script: node docs/sprint-5/eval/compare-ocr.mjs.
+
+Muestra: varios proveedores, PDF nativos y escaneos. No usar DEMO-VEC como gold. No tunear reglas sobre el gold. Anonimizar NIT, direccion, NIC y nombres antes de guardar nada en el repo. No demo publica de estas facturas antes de US-08.
+
+Criterios de aceptacion
+- Exito: se mide y se reporta la precision global y por campo (JSON del script) sobre el gold.
+- Error: los file_name sin prediccion quedan listados; no se inventan valores.
+- Permiso: no hay PDFs ni CSV identificables en el repo.
+
+Meta, no criterio de aceptacion: precision >= 90 %.",3,Highest,S5,excel-us-01,excel-us-02,nucleo,
+105,Story,[TK-03] RAGAS antes y despues de Titan,"Como tesista, quiero la misma suite RAGAS con hash y con Titan para documentar la diferencia.
+
+Excel TK-03. Pasos: npm run eval:ragas -> docs/sprint-5/eval/ragas-antes.json; tras US-04 -> ragas-despues.json y tabla metrica / antes / despues / delta. Explicar que faithfulness vale 1.0 por construccion (se filtran citas no recuperadas antes de puntuar).
+
+Criterios de aceptacion
+- Exito: se mide y se reportan las dos corridas (antes y despues) con tabla delta y la nota de faithfulness.
+- Error: si Bedrock no esta, la suite termina con el generador local y se reporta el modo usado.
+
+Meta, no criterio de aceptacion: ragas o faithfulness >= 0.85.",3,Highest,S5,excel-tk-03,nucleo,,

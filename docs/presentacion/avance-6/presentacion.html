@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SmartBills Cleaner · Avance 6 · Release 2</title>
+<style>
+  :root {
+    --ink: #10302c; --muted: #3d5c57; --line: #d3e1de; --paper: #ffffff;
+    --primary: #0f8b7d; --primary-d: #0a6358; --soft: #dff5f1;
+    --blue: #1d5d9b; --blue-soft: #e4eef9;
+    --amber: #9a5b00; --amber-soft: #fff3d6;
+    --red: #9e2b2b; --red-soft: #fdeaea;
+    --green: #176b35; --green-soft: #e3f6e9;
+    --hash: #6b7c78; --titan: #0f8b7d;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%; background: #0e1f1d;
+    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    color: var(--ink); overflow: hidden;
+    print-color-adjust: exact; -webkit-print-color-adjust: exact;
+  }
+  #viewport { position: fixed; inset: 0 0 52px 0; display: grid; place-items: center; }
+  #stage { width: 1280px; height: 720px; position: relative; transform-origin: center center; }
+  .slide {
+    position: absolute; inset: 0; background: var(--paper); border-radius: 16px;
+    overflow: hidden; display: none; flex-direction: column; padding: 28px 44px 52px;
+    print-color-adjust: exact; -webkit-print-color-adjust: exact;
+  }
+  .slide.active { display: flex; }
+  .slide::before {
+    content: ""; position: absolute; left: 0; top: 0; right: 0; height: 6px;
+    background: linear-gradient(90deg, var(--primary), var(--blue));
+  }
+  .cover {
+    background: radial-gradient(circle at 14% 8%, #14a08f 0%, #0b4f47 46%, #08302c 100%);
+    color: #fff; padding: 52px 64px 56px;
+    print-color-adjust: exact; -webkit-print-color-adjust: exact;
+  }
+  .cover::before { display: none; }
+  .cover .kicker { background: rgba(255,255,255,.14); color: #c9f2ea; }
+  .cover h1 { font-size: 44px; line-height: 1.08; letter-spacing: -.02em; margin: 16px 0 14px; max-width: 1040px; }
+  .cover .lead { font-size: 22px; color: #cfeee8; max-width: 860px; line-height: 1.4; }
+  .cover .who { position: absolute; left: 64px; bottom: 48px; font-size: 20px; color: #a8d9d0; }
+  .kicker {
+    display: inline-block; font-size: 13px; font-weight: 800; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--primary); background: var(--soft);
+    padding: 5px 12px; border-radius: 99px; margin-bottom: 8px;
+  }
+  .title { font-size: 28px; line-height: 1.15; font-weight: 800; letter-spacing: -.01em; }
+  .sub { font-size: 20px; color: var(--muted); margin-top: 6px; line-height: 1.35; }
+  .body { margin-top: 14px; flex: 1; min-height: 0; }
+  h1, h2, h3, p { margin: 0; }
+  .foot {
+    position: absolute; left: 44px; right: 44px; bottom: 12px;
+    display: flex; justify-content: space-between; gap: 12px;
+    font-size: 16px; color: #5f7a75; align-items: center;
+  }
+  .foot a, a.gh { color: var(--blue); text-decoration: none; font-weight: 700; }
+  .cover .foot, .cover .foot a { color: #9fd4cb; }
+  .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; height: 100%; }
+  .g3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; height: 100%; }
+  .g3 > div { display: flex; flex-direction: column; min-height: 0; }
+  .g3 .chart { flex: 1; min-height: 0; height: auto; max-height: 340px; }
+  .row { display: flex; gap: 16px; height: 100%; }
+  .col { flex: 1; min-width: 0; }
+  .card { border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; background: #fbfdfc; }
+  .card h3 { font-size: 20px; margin-bottom: 8px; }
+  .card p, .card li { font-size: 18px; color: var(--muted); line-height: 1.35; }
+  .prose { font-size: 18px; line-height: 1.42; color: #24423e; margin: 0 0 10px; }
+  .quote {
+    font-size: 18px; line-height: 1.35; color: var(--primary-d);
+    background: var(--soft); border-left: 4px solid var(--primary);
+    padding: 8px 14px; border-radius: 0 10px 10px 0; margin: 8px 0 0;
+  }
+  .role-tag {
+    display: inline-block; font-size: 13px; font-weight: 800; letter-spacing: .04em;
+    text-transform: uppercase; color: var(--primary-d); margin-bottom: 6px;
+  }
+  .card.soft { background: var(--soft); border-color: #bfe6df; }
+  .card.warn { background: var(--amber-soft); border-color: #f1d9a0; }
+  .card.good { background: var(--green-soft); border-color: #bfe3cb; }
+  .card.plan { background: var(--blue-soft); border-color: #c5d8ef; }
+  table { width: 100%; border-collapse: collapse; font-size: 18px; }
+  th, td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; line-height: 1.3; }
+  th { background: var(--ink); color: #fff; font-weight: 700; font-size: 16px; }
+  td { color: #24423e; }
+  td b { color: var(--ink); }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 3px 10px; border-radius: 99px; font-size: 15px; font-weight: 800; white-space: nowrap;
+  }
+  .chip.ok { background: var(--green-soft); color: var(--green); }
+  .chip.adj { background: var(--amber-soft); color: var(--amber); }
+  .chip.pend { background: var(--red-soft); color: var(--red); }
+  .chip.plan { background: #1d5d9b; color: #fff; }
+  .kpi { border-radius: 14px; padding: 16px 18px; background: var(--soft); border: 1px solid #bfe6df; }
+  .kpi b { display: block; font-size: 32px; line-height: 1; color: var(--primary-d); }
+  .kpi span { font-size: 18px; color: var(--muted); }
+  .shot { width: 100%; height: 100%; object-fit: contain; object-position: top left; border-radius: 10px; border: 1px solid var(--line); background: #f4f7f6; display: block; }
+  .shot-box { height: 100%; min-height: 0; display: flex; flex-direction: column; }
+  .shot-box .shot { flex: 1; min-height: 0; }
+  .cap { font-size: 16px; color: var(--muted); margin-top: 6px; flex-shrink: 0; padding-bottom: 4px; }
+  .crop-madrid { overflow: hidden; border-radius: 10px; border: 1px solid var(--line); height: 100%; }
+  .crop-madrid img { width: 128%; margin-left: -16%; margin-top: -4%; display: block; }
+  .crop-nav { overflow: hidden; border-radius: 10px; border: 1px solid var(--line); height: 100%; }
+  .crop-nav img { width: 118%; margin-left: -14%; margin-top: -2%; display: block; }
+  .missing {
+    border: 3px dashed #b23a3a;
+    background: repeating-linear-gradient(-45deg, #fdeaea, #fdeaea 10px, #fff 10px, #fff 20px);
+    color: #7a1212; font-weight: 800; font-size: 18px; padding: 12px 14px; border-radius: 10px; line-height: 1.3;
+  }
+  .missing.thin { font-size: 16px; padding: 8px 12px; margin-bottom: 8px; }
+  .flow { display: flex; align-items: stretch; gap: 6px; }
+  .step { flex: 1; border: 1px solid var(--line); border-radius: 12px; padding: 12px 8px; background: #fbfdfc; position: relative; }
+  .step b { display: block; font-size: 17px; margin-bottom: 4px; }
+  .step span { font-size: 15px; color: var(--muted); line-height: 1.3; display: block; }
+  .step .n {
+    position: absolute; top: -11px; left: 8px; background: var(--primary); color: #fff;
+    border-radius: 99px; width: 22px; height: 22px; font-size: 12px; font-weight: 800;
+    display: grid; place-items: center;
+  }
+  .arrow { align-self: center; color: var(--primary); font-weight: 800; font-size: 20px; }
+  .agenda-item {
+    display: flex; gap: 16px; align-items: center;
+    padding: 10px 14px; border: 1px solid var(--line); border-radius: 12px; margin: 8px 0; background: #fbfdfc;
+  }
+  .agenda-item i {
+    width: 36px; height: 36px; border-radius: 99px; background: var(--primary); color: #fff;
+    font-style: normal; font-weight: 800; font-size: 18px; display: grid; place-items: center; flex-shrink: 0;
+  }
+  .agenda-item b { font-size: 22px; display: block; }
+  .agenda-item span { font-size: 18px; color: var(--muted); }
+  .stack { display: flex; flex-wrap: wrap; gap: 8px; }
+  .box { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; font-size: 16px; font-weight: 700; }
+  .layer { border-radius: 12px; padding: 10px 12px; margin-bottom: 6px; border: 1px solid var(--line); }
+  .layer h3 { font-size: 15px; letter-spacing: .04em; text-transform: uppercase; margin-bottom: 6px; }
+  .layer.ui { background: #e8f1fb; }
+  .layer.api { background: #e7f6ea; }
+  .layer.ia { background: #fde9d4; }
+  .layer.data { background: #ece4f7; }
+  .pipe { display: flex; align-items: stretch; gap: 6px; }
+  .pipe-step {
+    flex: 1; background: #fbfdfc; border: 1px solid var(--line); border-radius: 10px;
+    padding: 10px 8px; text-align: center; font-size: 16px; font-weight: 800; line-height: 1.25;
+  }
+  .pipe-step small { display: block; font-size: 14px; font-weight: 600; color: var(--muted); margin-top: 4px; }
+  .pipe-step.on { background: var(--soft); border-color: #bfe6df; }
+  .pipe-step.off { background: #f4f4f4; color: #7a8c88; }
+  .pipe-arr { align-self: center; color: var(--primary); font-weight: 800; font-size: 20px; flex-shrink: 0; }
+  .notes {
+    display: none; position: absolute; left: 20px; right: 20px; bottom: 48px;
+    background: rgba(14, 31, 29, .94); color: #e6f6f2; border-radius: 12px;
+    padding: 12px 16px; font-size: 16px; line-height: 1.4; z-index: 4; max-height: 210px; overflow: auto;
+  }
+  body.show-notes .slide.active .notes { display: block; }
+  .notes b { color: #7fe0cf; }
+  #nav {
+    position: fixed; left: 0; right: 0; bottom: 0; height: 52px;
+    background: #0a1917; display: flex; align-items: center; gap: 12px;
+    padding: 0 18px; color: #9cb8b3; font-size: 15px;
+  }
+  #nav button {
+    background: #173733; color: #bfece3; border: 1px solid #2a524c;
+    padding: 7px 14px; border-radius: 9px; cursor: pointer; font-weight: 700; font-size: 15px;
+  }
+  #nav button:disabled { opacity: .35; cursor: default; }
+  #bar { flex: 1; height: 5px; background: #1c3a36; border-radius: 99px; overflow: hidden; }
+  #bar i { display: block; height: 100%; width: 0; background: #2fc4ae; }
+  #ttl { min-width: 280px; text-align: right; }
+  .chart { width: 100%; height: 100%; }
+  .legend { display: flex; gap: 14px; font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  .legend span::before {
+    content: ""; display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px;
+  }
+  .legend .h::before { background: var(--hash); }
+  .legend .t::before { background: var(--titan); }
+  .obs td { font-size: 18px; padding: 5px 8px; }
+  .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .kpi.sm b { font-size: 26px; }
+  .now-list { list-style: none; margin: 0; padding: 0; }
+  .now-list li {
+    display: flex; justify-content: space-between; gap: 12px; align-items: center;
+    padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 18px;
+  }
+  .now-list li:last-child { border-bottom: 0; }
+  .now-list .lbl { font-weight: 800; }
+  .now-list .who { color: var(--muted); font-size: 16px; }
+  #notes-page { display: none; }
+  body.notes-mode { overflow: auto; background: #fff; height: auto; }
+  body.notes-mode #viewport, body.notes-mode #nav { display: none !important; }
+  body.notes-mode #notes-page {
+    display: block; max-width: 820px; margin: 0 auto; padding: 36px 28px 80px; color: var(--ink);
+  }
+  #notes-page h1 { font-size: 28px; margin-bottom: 8px; }
+  #notes-page .lead { font-size: 18px; color: var(--muted); margin-bottom: 24px; }
+  #notes-page .n-item { border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin: 0 0 14px; }
+  #notes-page .n-item h2 { font-size: 18px; margin-bottom: 6px; }
+  #notes-page .n-item p { font-size: 18px; line-height: 1.45; }
+  @media print {
+    html, body { overflow: visible; height: auto; background: #fff; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+    #viewport { position: static; display: block; inset: auto; }
+    #nav { display: none !important; }
+    body.show-notes .notes, .notes { display: none !important; }
+    #stage { transform: none !important; width: auto; height: auto; position: static; }
+    .slide {
+      position: relative; display: flex !important;
+      width: 13.333in; height: 7.5in;
+      page-break-after: always; break-after: page;
+      border-radius: 0; animation: none;
+    }
+    .slide:last-of-type { page-break-after: auto; break-after: auto; }
+    @page { size: 13.333in 7.5in; margin: 0; }
+    body.notes-mode .slide, body.notes-mode #stage, body.notes-mode #viewport { display: none !important; }
+    body.notes-mode #notes-page { display: block; }
+    body.notes-mode { background: #fff; }
+    body.notes-mode @page { size: A4; margin: 16mm; }
+  }
+</style>
+</head>
+<body>
+<div id="viewport"><div id="stage">
+
+<section class="slide cover active" data-title="Portada" data-sec="1">
+  <span class="kicker">Avance 6</span>
+  <h1>Release 2: búsqueda semántica con Titan, medida en 16 consultas</h1>
+  <p class="lead">Sprints 3, 4 y 5 · producto en local · corpus <b>DEMO-VEC</b></p>
+  <div class="g3" style="position:absolute;left:64px;right:64px;bottom:110px;">
+    <div class="kpi" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2)"><b style="color:#fff">S3–S5</b><span style="color:#cfeee8">Ingesta, vectores, medición</span></div>
+    <div class="kpi" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2)"><b style="color:#fff">15 / 15</b><span style="color:#cfeee8">esperado en 1.º con Titan</span></div>
+    <div class="kpi" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2)"><b style="color:#fff">PLAN_A_EC2</b><span style="color:#cfeee8">Titan invocado · X-01 cerrado</span></div>
+  </div>
+  <p class="who">Miguel Rincón · Maestría en Desarrollo de IA · Trabajo de grado</p>
+  <div class="foot"><span>Solo DEMO-VEC.</span><span>1 · Estado y lo trabajado · 1/19</span></div>
+  <aside class="notes"><b>Slides 1–3.</b> Solo DEMO-VEC. Claves S5 si el tablero difiere: decirlo aquí. Acta de director no está en git.</aside>
+</section>
+
+<section class="slide" data-title="Agenda" data-sec="1">
+  <span class="kicker">Agenda</span>
+  <h2 class="title">Cinco secciones</h2>
+  <div class="body">
+    <div class="agenda-item"><i>1</i><div><b>Estado y lo trabajado</b><span>Estado del proyecto, goals y compromiso S5</span></div></div>
+    <div class="agenda-item"><i>2</i><div><b>Cómo se llevó a cabo</b><span>Scrum y roles, prácticas, desarrollo técnico</span></div></div>
+    <div class="agenda-item"><i>3</i><div><b>Resultados</b><span>Demo, criterios, ranking Titan 15/15</span></div></div>
+    <div class="agenda-item"><i>4</i><div><b>El Release 2</b><span>Qué entra y qué se ajustó</span></div></div>
+    <div class="agenda-item"><i>5</i><div><b>Lo que sigue</b><span>Retro S5, aislamiento, publicar URL</span></div></div>
+  </div>
+  <div class="foot"><span>docs/presentacion/avance-6/guion.md</span><span>1 · Estado y lo trabajado · 2/19</span></div>
+  <aside class="notes"><b>Slides 1–3.</b> Primero prácticas; luego demo; al final plan S6/S7.</aside>
+</section>
+
+<section class="slide" data-title="Estado general" data-sec="1">
+  <span class="kicker">Estado general</span>
+  <h2 class="title">Release 2 corre en local. Falta aislar dueños y publicar.</h2>
+  <div class="body" style="display:flex;flex-direction:column;gap:12px">
+    <div class="kpi-row">
+      <div class="kpi sm"><b>15 / 15</b><span>esperado en 1.º con Titan</span></div>
+      <div class="kpi sm"><b>0,4</b><span>OCR global · NIT y total 1,00</span></div>
+      <div class="kpi sm"><b>0,68</b><span>RAGAS · 5 casos, medido</span></div>
+      <div class="kpi sm"><b>27 / 27</b><span>unitarias backend</span></div>
+    </div>
+    <div class="g2" style="flex:1">
+      <div class="card">
+        <h3>Dónde está el producto</h3>
+        <ul class="now-list">
+          <li><span class="lbl">S3 Ingesta OCR y CRUD</span><span class="chip ok">Listo</span></li>
+          <li><span class="lbl">S4 Vectores, RAG, híbrida</span><span class="chip ok">Listo</span></li>
+          <li><span class="lbl">S5 Titan 1024 y medición</span><span class="chip ok">Listo en local</span></li>
+          <li><span class="lbl">S6 Cada usuario ve lo suyo</span><span class="chip pend">Siguiente</span></li>
+          <li><span class="lbl">S7 URL con HTTPS</span><span class="chip pend">Siguiente</span></li>
+        </ul>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="card good"><h3>Entra en R2</h3><p>Carga, OCR medido, listado, Titan 1024, búsqueda híbrida y RAG con citas. 13 de 13 SP en git, DOC-01 cerrado.</p></div>
+        <div class="card warn"><h3>Ajustado o pendiente</h3><p>Sin Textract, sin cola, disco local. Cuatro campos OCR no se extraen. No hay URL pública ni aislamiento de dueño.</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>plan-vigente-s5-s8.md · S3 <a class="gh" data-h="6ef3e096e53a48921b5ce0d8735f421bda2cd79e">6ef3e09</a> · S5 <a class="gh" data-h="02f2bb7dab345a2fb5bb38426f4255570880879e">02f2bb7</a></span><span>1 · Estado y lo trabajado · 3/19</span></div>
+  <aside class="notes">Mensaje: el diferencial de R2 ya se demuestra en local. Lo que no está es aislamiento (S6) y publicación (S7). SP oficiales S3: por confirmar. Hash 96 fue la línea base de S4.</aside>
+</section>
+
+<section class="slide" data-title="Goals S3–S5" data-sec="1">
+  <span class="kicker">Sprint goals</span>
+  <h2 class="title">De la factura al ranking medido</h2>
+  <div class="body" style="display:flex;flex-direction:column;gap:14px;justify-content:center">
+    <div class="pipe">
+      <div class="pipe-step on">S3<small>Ingesta OCR CRUD citas</small></div>
+      <div class="pipe-arr">→</div>
+      <div class="pipe-step on">S4<small>pgvector RAG híbrida</small></div>
+      <div class="pipe-arr">→</div>
+      <div class="pipe-step on">S5<small>Titan 1024 OCR/RAGAS medidos</small></div>
+    </div>
+    <div class="g3">
+      <div class="card"><h3>S3</h3><p>Listado + eliminar. 12/12. <a class="gh" data-h="6ef3e096e53a48921b5ce0d8735f421bda2cd79e">6ef3e09</a></p></div>
+      <div class="card"><h3>S4</h3><p>Capturas s4-01…04. p95 91,9 ms. <a class="gh" data-h="32f6dc86e37c8c73a4f17336d792970581bebb9b">32f6dc8</a></p></div>
+      <div class="card soft"><h3>S5</h3><p>16 consultas, OCR 0,4, RAGAS 0,68. <a class="gh" data-h="02f2bb7dab345a2fb5bb38426f4255570880879e">02f2bb7</a></p></div>
+    </div>
+  </div>
+  <div class="foot"><span>plan-vigente-s5-s8.md · informe-sprint-4.html</span><span>1 · Estado y lo trabajado · 4/19</span></div>
+  <aside class="notes"><b>Slides 4–5.</b> Capacidad S5: 13 + 3 buffer. Fechas 9–29 nov: por confirmar si Jira difiere.</aside>
+</section>
+
+<section class="slide" data-title="Compromiso S5" data-sec="1">
+  <span class="kicker">Planning S5</span>
+  <h2 class="title">Compromiso 13 SP: cinco Done en git</h2>
+  <div class="body row">
+    <div class="col">
+      <table>
+        <thead><tr><th>Historia</th><th>SP</th><th>Git</th></tr></thead>
+        <tbody>
+          <tr><td><b>SBC-66</b> X-01</td><td>1</td><td><a class="gh" data-h="7e9f0dde38969683443c93585ddca79993a0b008">7e9f0dd</a></td></tr>
+          <tr><td><b>SBC-68</b> US-04</td><td>5</td><td><a class="gh" data-h="02f2bb7dab345a2fb5bb38426f4255570880879e">02f2bb7</a></td></tr>
+          <tr><td><b>SBC-69</b> OCR eval</td><td>3</td><td><a class="gh" data-h="2ea614d633281eff12bfed6074fcb5b961e0ae6a">2ea614d</a></td></tr>
+          <tr><td><b>SBC-70</b> RAGAS</td><td>3</td><td><a class="gh" data-h="cd5cc91090092f3e0a6e4d781fd3000d7783abca">cd5cc91</a></td></tr>
+          <tr><td><b>SBC-67</b> DOC-01</td><td>1</td><td><span data-doc01="chip"></span> <span data-doc01="link"></span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="col shot-box">
+      <img class="shot" src="assets/jira-s5-tablero.png" alt="Tablero Jira S5 columna Listo" />
+      <p class="cap">jira-s5-tablero.png</p>
+    </div>
+  </div>
+  <div class="foot"><span>plan-vigente · DOC-01 <span data-doc01="text"></span> · buffer 3 no asignado</span><span>1 · Estado y lo trabajado · 5/19</span></div>
+  <aside class="notes">DOC-01: constante DOC01 al inicio del script. Buffer 3 no se gastó en alcance extra.</aside>
+</section>
+
+<section class="slide" data-title="Metodología" data-sec="2">
+  <span class="kicker">Metodología</span>
+  <h2 class="title">Scrum adaptado: una persona, tres roles en momentos distintos</h2>
+  <div class="body" style="display:flex;flex-direction:column;gap:10px">
+    <p class="prose">La propuesta del proyecto integrador fija <b>Scrum</b> como marco: Product Backlog, sprints con objetivo, incremento demostrable y Definition of Done. El equipo es de una persona, así que los roles <b>no se inventan como un grupo ficticio</b>: se simulan con responsabilidades separadas en el tiempo. Primero se prioriza (PO), después se construye y se prueba (Developer), y al cierre se inspecciona el proceso (Scrum Master). Jira guarda el backlog; git guarda el incremento.</p>
+    <div class="g3">
+      <div class="card">
+        <div class="role-tag">Product Owner</div>
+        <h3>Jefferson Peña  asesor</h3>
+        <p>Prioriza el backlog, recorta extras y decide qué entra en el Release 2. En S5 el tope fue 13 SP + 3 de buffer, sin gastar el buffer en alcance nuevo.</p>
+      </div>
+      <div class="card">
+        <div class="role-tag">Developer</div>
+        <h3>El mismo, en la ejecución</h3>
+        <p>Implementa la historia, corre las pruebas y deja evidencia. Una historia, un commit con clave SBC-n. DoD: unitarias en verde antes de Done.</p>
+      </div>
+      <div class="card">
+        <div class="role-tag">Scrum Master</div>
+        <h3> Miguel angel rincon · el estudiante </h3>
+        <p>El tutor cuida el marco. En el día a día el estudiante deja planning, review y retro por escrito (Confluence + git). No hay dailies inventados.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Propuesta: Scrum + Jira + incremento · DOC-01 · <a class="gh" data-h="717bbe5e36a7f75cabeb209f63160cbfb75f0a61">717bbe5</a></span><span>2 · Cómo se llevó a cabo · 6/19</span></div>
+  <aside class="notes">Texto para decir: no es un equipo de tres; es un proyecto individual que aplica Scrum adaptado. Interesados = evaluación académica. Sin pares: la revisión de código es autorrevisión. Velocidad = 13 SP en git. El donut de Jira no es burndown clásico.</aside>
+</section>
+
+
+
+<section class="slide" data-title="Prácticas y artefactos" data-sec="2">
+  <span class="kicker">Metodología</span>
+  <h2 class="title">Prácticas de la propuesta, aplicadas en S3–S5</h2>
+  <p class="sub">Lo que pide la rúbrica: describir las prácticas y mostrar que coinciden con las planeadas.</p>
+  <div class="body" style="display:flex;flex-direction:column;gap:8px">
+    <table>
+      <thead><tr><th>Práctica (propuesta)</th><th>Cómo se usó</th><th>Evidencia</th></tr></thead>
+      <tbody>
+        <tr><td><b>Product Backlog</b></td><td>Historias SBC-n en Jira, priorizadas por valor</td><td>tablero S5 · captura backlog</td></tr>
+        <tr><td><b>Sprint Planning</b></td><td>Goal + compromiso en SP (S5: 13 + 3 buffer)</td><td>plan-vigente-s5-s8.md</td></tr>
+        <tr><td><b>Sprint Backlog</b></td><td>Solo las HU del sprint; extras no se cuelan</td><td>SBC-66 a 70</td></tr>
+        <tr><td><b>Incremento</b></td><td>Al cierre hay software que se demuestra</td><td>Docker local · demo DEMO-VEC</td></tr>
+        <tr><td><b>DoD</b></td><td>Prueba + commit con clave + sin secretos</td><td>27/27 · mensajes SBC-n</td></tr>
+        <tr><td><b>Review / Retro</b></td><td>Criterios vs hecho; 1 ok / 1 cambiar / 1 acción</td><td>Confluence S5 · esta review</td></tr>
+        <tr><td><b>Release Plan</b></td><td>R2 actualizado; desvíos justificados</td><td>diapositiva 16</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="foot"><span>Schwaber y Sutherland · Jira + git · no hay notas daily en git</span><span>2 · Cómo se llevó a cabo · 7/19</span></div>
+  <aside class="notes">Recorrer la tabla: son las prácticas de la propuesta, no un Scrum de libro con tres personas. Daily no se reconstruye. Buffer 3 no se usó.</aside>
+</section>
+
+<section class="slide" data-title="Desarrollo técnico" data-sec="2">
+  <span class="kicker">Desarrollo</span>
+  <h2 class="title">Cómo se construye el incremento: de la HU al vector</h2>
+  <div class="body" style="display:flex;flex-direction:column;gap:8px">
+    <p class="prose">Cada historia sigue el mismo camino técnico: se parte de un ticket, se implementa en una rama, se prueba y se indexa. El núcleo de R2 es el pipeline de documento: el PDF entra, el OCR local saca texto, Titan lo convierte en un vector de 1024 y pgvector lo ordena. Si Bedrock no responde, la lista no se rompe: pasa a modo degradado (SQL + léxico) y <b>no mezcla</b> un embedding de 96 con uno de 1024.</p>
+    <div class="pipe">
+      <div class="pipe-step on">HU en Jira</div>
+      <div class="pipe-arr">→</div>
+      <div class="pipe-step on">Código + test</div>
+      <div class="pipe-arr">→</div>
+      <div class="pipe-step on">OCR local</div>
+      <div class="pipe-arr">→</div>
+      <div class="pipe-step on">Titan 1024</div>
+      <div class="pipe-arr">→</div>
+      <div class="pipe-step on">HNSW cosine</div>
+    </div>
+    <table>
+      <thead><tr><th>Capa</th><th>Tecnología</th><th>Decisión de diseño</th></tr></thead>
+      <tbody>
+        <tr><td>UI</td><td>React 18 + Vite</td><td>Carga, listado y consultas con citas</td></tr>
+        <tr><td>API</td><td>Express 4 + JWT 12 h</td><td>REST; roles ADMIN / ANALYST / VIEWER</td></tr>
+        <tr><td>Datos</td><td>PostgreSQL 15 + pgvector HNSW</td><td>Un solo espacio vectorial, dim 1024</td></tr>
+        <tr><td>OCR</td><td>pdftotext / pdf.js / Tesseract</td><td>Local; Textract no está en la cuenta</td></tr>
+        <tr><td>IA</td><td>Titan v2 + RAG extractivo Top-5</td><td>Recupera Titan; la respuesta cita la página</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="foot"><span>package.json · docker-compose pg15 · SBC-68 · <a class="gh" data-h="02f2bb7dab345a2fb5bb38426f4255570880879e">02f2bb7</a></span><span>2 · Cómo se llevó a cabo · 8/19</span></div>
+  <aside class="notes">Técnico: dim 1024 nativa de Titan v2 (no 1536). RAGAS y ranking se midieron con línea base hash, luego Titan. 27/27. Nube de cómputo de la app = S7; Titan ya corre en Bedrock.</aside>
+</section>
+
+<section class="slide" data-title="Componente inteligente" data-sec="3">
+  <span class="kicker">Demo</span>
+  <h2 class="title">Búsqueda híbrida + RAG citado Top-5</h2>
+  <p class="quote">«El ranking semántico lo hace Amazon Titan Embed Text v2, dimensión 1024. El RAG cita la página; no inventa.»</p>
+  <div class="body g2">
+    <div class="shot-box">
+      <img class="shot" src="assets/s4-01-busqueda-hibrida.png" alt="Búsqueda híbrida energia electrica" />
+      <p class="cap">s4-01 · sql+pgvector · <a class="gh" data-h="32f6dc86e37c8c73a4f17336d792970581bebb9b">32f6dc8</a></p>
+    </div>
+    <div class="shot-box">
+      <img class="shot" src="assets/s4-03-consulta-rag-citas.png" alt="Consulta RAG con cita DEMO-VEC-05" />
+      <p class="cap">s4-03 · [Factura DEMO-VEC-05, pág. 1] · <a class="gh" data-h="43deec1b9ba309069d71dc265e73a0e338904b93">43deec1</a></p>
+    </div>
+  </div>
+  <div class="foot"><span>SBC-25 · SBC-17 · DEMO-VEC</span><span>3 · Resultados · 9/19</span></div>
+  <aside class="notes"><b>Slides 9–12.</b> Login con el usuario de demostración. Fotos S4. En vivo Titan debe subir Enel al 1.º.</aside>
+</section>
+
+<section class="slide" data-title="Demo búsqueda" data-sec="3">
+  <span class="kicker">Vivo · búsqueda</span>
+  <h2 class="title">Titan 1024: Enel pasa al 1.º lugar</h2>
+  <p class="sub">Consulta <b>energia electrica</b> · proveedor vacío · modo <b>sql+pgvector</b></p>
+  <p class="quote">«Busco con Titan, no con el hash: SQL primero y Titan Embed v2 después. DEMO-VEC-05, Enel, queda primera.»</p>
+  <div class="body g2">
+    <div class="shot-box">
+      <img class="shot" src="assets/demo-02-titan-enel.png" alt="Búsqueda Titan: DEMO-VEC-05 Enel en primer lugar" />
+      <p class="cap">Titan 1024 · en vivo · DEMO-VEC-05 1.º</p>
+    </div>
+    <div class="shot-box">
+      <img class="shot" src="assets/s4-01b-resultados.png" alt="Misma consulta con hash: Enel en cuarta fila" />
+      <p class="cap">Línea base hash · Enel 4.º · no es ranking Titan</p>
+    </div>
+  </div>
+  <div class="foot"><span>Q01 CSV: hash 4 / Titan 1 · SBC-68 · <a class="gh" data-h="02f2bb7dab345a2fb5bb38426f4255570880879e">02f2bb7</a></span><span>3 · Resultados · 10/19</span></div>
+  <aside class="notes"><b>Demo viva.</b> Captura 2026-11-06. Palabra clave exactamente energia electrica, proveedor vacío. Si Bedrock falla, usa la de la izquierda si el modo sigue sql+pgvector; si pasa a degraded, dilo.</aside>
+</section>
+
+<section class="slide" data-title="Demo RAG" data-sec="3">
+  <span class="kicker">Vivo · consultas</span>
+  <h2 class="title">Cuanto pague de energia electrica con Enel?</h2>
+  <p class="sub">Respuesta con <b>[Factura DEMO-VEC-05, pág. 1]</b> · Top-5 · generador local</p>
+  <p class="quote">«Titan recupera el Top-5. La respuesta es extractiva local y cita [Factura DEMO-VEC-05, pág. 1].»</p>
+  <div class="body shot-box">
+    <img class="shot" src="assets/s4-03-consulta-rag-citas.png" alt="RAG con cita DEMO-VEC-05 y Top-5" />
+  </div>
+  <div class="foot"><span>s4-03 · SBC-17/29 · <a class="gh" data-h="43deec1b9ba309069d71dc265e73a0e338904b93">43deec1</a> · <a class="gh" data-h="28a4e377d41e5ed13bf672e2d4e5ae77e6aa63dd">28a4e37</a></span><span>3 · Resultados · 11/19</span></div>
+  <aside class="notes"><b>Demo viva.</b> Citas clicables. Extractivo local. Plan B si Bedrock 403: modo degradado (SQL + léxico, no mezcla 96-d en 1024); usar s4-01 y decirlo. No PDF reales.</aside>
+</section>
+
+<section class="slide" data-title="Demo vacío" data-sec="3">
+  <span class="kicker">Vivo · sin evidencia</span>
+  <h2 class="title">Madrid: sin evidencia verificable</h2>
+  <p class="sub">El sistema no inventa una cita.</p>
+  <p class="quote">«Con Titan, si el corpus no tiene Madrid, no hay cita. Vacío es el resultado correcto.»</p>
+  <div class="body shot-box">
+    <div class="crop-madrid"><img src="assets/s4-04-sin-evidencia.png" alt="Panel sin evidencia verificable" /></div>
+  </div>
+  <div class="foot"><span>s4-04 recorte UI · SBC-17 · <a class="gh" data-h="43deec1b9ba309069d71dc265e73a0e338904b93">43deec1</a></span><span>3 · Resultados · 12/19</span></div>
+  <aside class="notes"><b>Demo viva.</b> Verificar en vivo con Titan; si no sale vacío, usar la captura.</aside>
+</section>
+
+<section class="slide" data-title="Matriz de criterios" data-sec="3">
+  <span class="kicker">Criterios</span>
+  <h2 class="title">Criterios de aceptación: estado por historia</h2>
+  <div class="body">
+    <table>
+      <thead><tr><th>Historia</th><th>Criterio</th><th>Estado</th></tr></thead>
+      <tbody>
+        <tr><td>SBC-3/4/5/6/22</td><td>Campos, CRUD, citas</td><td><span class="chip ok">✓ Cumplido</span></td></tr>
+        <tr><td>SBC-8 OCR</td><td>PDF operativo en local</td><td><span class="chip adj">△ Ajustado</span> sin Textract</td></tr>
+        <tr><td>SBC-15/17/25/29</td><td>pgvector, NL, híbrida, RAG</td><td><span class="chip ok">✓ Cumplido</span></td></tr>
+        <tr><td>SBC-66/68/70</td><td>Hosting, Titan, RAGAS medido</td><td><span class="chip ok">✓ Cumplido</span></td></tr>
+        <tr><td>SBC-69 OCR eval</td><td>Medir; 0,4 ≠ 90 %</td><td><span class="chip adj">△ Ajustado</span></td></tr>
+        <tr><td>SBC-67 DOC-01</td><td>Evidencia Scrum + commit</td><td><span data-doc01="chip"></span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="foot"><span>guion.md §b · OCR ≥90 % y RAGAS 0,85 son meta, no criterio · DOC-01 <span data-doc01="text"></span></span><span>3 · Resultados · 13/19</span></div>
+  <aside class="notes"><b>Rúbrica 40 %.</b> Este momento = HU de R2. Cumplidas o ajustadas con criterio escrito (OCR medir ≠ 90 %; Textract fuera). Ranking, RAG y CRUD cumplen. OCR: proveedor/fecha/subtotal/IVA no se extraen; NIT y total sí. DOC-01 según DOC01.</aside>
+</section>
+
+<section class="slide" data-title="Pruebas" data-sec="3">
+  <span class="kicker">Pruebas</span>
+  <h2 class="title">12 → 24 → 27 unitarias. p95 91,9 ms</h2>
+  <div class="body row">
+    <div class="col shot-box">
+      <img class="shot" src="assets/terminal-27-tests.png" alt="Suite backend 27 de 27 pruebas en verde" />
+      <p class="cap">terminal-27-tests.png · 6 nov 2026</p>
+    </div>
+    <div class="col" style="display:flex;flex-direction:column;gap:10px;justify-content:center">
+      <div class="kpi"><b>12/12</b><span>S3 · OCR y citas</span></div>
+      <div class="kpi"><b>24/24</b><span>S4 · pgvector y RAG</span></div>
+      <div class="kpi"><b>27/27</b><span>S5 · Titan 1024</span></div>
+      <p class="sub">11/11 endpoints p95 &lt; 4 s. Peor: login 91,9 ms. Local, 15 oct.</p>
+    </div>
+  </div>
+  <div class="foot"><span>resultado-unitarias.json · metricas-rendimiento.json · <a class="gh" data-h="b9c8ef9b525248b926f864b4f2d91cc469d89c8c">b9c8ef9</a></span><span>3 · Resultados · 14/19</span></div>
+  <aside class="notes">27 incluye tests Titan. No hay E2E; no se presenta como logro.</aside>
+</section>
+
+<section class="slide" data-title="Métricas IA" data-sec="3">
+  <span class="kicker">IA medida</span>
+  <h2 class="title">Titan sube la factura esperada al 1.º lugar</h2>
+  <div class="body g3">
+    <div>
+      <div class="legend"><span class="h">Hash</span><span class="t">Titan</span></div>
+      <svg id="chart-rank" class="chart" viewBox="0 0 240 200" role="img" aria-label="Puesto hash versus Titan por consulta"></svg>
+      <p class="cap">Puesto por consulta · 1 arriba es mejor</p>
+    </div>
+    <div>
+      <div class="legend"><span class="h">Hash</span><span class="t">Titan</span></div>
+      <svg id="chart-first" class="chart" viewBox="0 0 240 200" role="img" aria-label="Consultas con la factura esperada en primer lugar"></svg>
+      <p class="cap">En 1.º lugar: 10/15 hash → 15/15 Titan</p>
+    </div>
+    <div>
+      <div class="legend"><span class="h">Hash</span><span class="t">Titan</span></div>
+      <svg id="chart-gains" class="chart" viewBox="0 0 240 200" role="img" aria-label="Cinco consultas que mejoran de puesto con Titan"></svg>
+      <p class="cap">5 consultas suben de puesto · Q01 Enel 4.º → 1.º</p>
+    </div>
+  </div>
+  <div class="foot"><span>queries-hash-vs-titan.csv · Q15 sin gold no cuenta · <a class="gh" data-h="02f2bb7dab345a2fb5bb38426f4255570880879e">02f2bb7</a></span><span>3 · Resultados · 15/19</span></div>
+  <aside class="notes">OCR 0,33 y RAGAS 0,68 se dicen en criterios: se midieron y no son el avance de Titan. Aquí el avance es recuperación. Promedio de puesto: hash 1,60 → Titan 1,00.</aside>
+</section>
+
+<section class="slide" data-title="Release 2" data-sec="4">
+  <span class="kicker">Release 2</span>
+  <h2 class="title">Release Plan y Product Backlog, con justificación</h2>
+  <div class="body row">
+    <div class="col shot-box">
+      <img class="shot" src="assets/release-plan.png" alt="Release Plan actualizado filas de Release 2" />
+      <p class="cap">Release Plan actualizado · R2</p>
+    </div>
+    <div class="col">
+      <p class="prose" style="margin-bottom:8px">R2 se cierra en local con las HU de este momento. Lo que la propuesta ponía en nube de aplicación (URL, S3, Textract, cola) se justifica y se mueve: no cabe en Educate o bloquea el aislamiento.</p>
+      <table>
+        <thead><tr><th>Desvío</th><th>Por qué se ajustó</th></tr></thead>
+        <tbody>
+          <tr><td>URL pública</td><td>S7; primero US-08 y EC2 con rol IAM</td></tr>
+          <tr><td>Textract</td><td>No disponible en la cuenta de estudiante</td></tr>
+          <tr><td>Cola SQS</td><td>OCR síncrono suficiente en PDF nativo</td></tr>
+          <tr><td>1024, no 1536</td><td>Dimensión nativa de Titan v2</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="foot"><span>plan-vigente §R2 · ADR 001 · Product Backlog en diapositiva 19</span><span>4 · El Release 2 · 16/19</span></div>
+  <aside class="notes"><b>Slides 16–17.</b> Rúbrica 50 %: prácticas descritas, HU de R2 hechas, release y backlog actualizados, nube de modelo sí / URL de app S7. Acta de director no está en git.</aside>
+</section>
+
+<section class="slide" data-title="Observaciones" data-sec="4">
+  <span class="kicker">Observaciones anteriores</span>
+  <h2 class="title">Qué se cerró, qué se ajustó, qué sigue</h2>
+  <div class="body">
+    <table class="obs">
+      <thead><tr><th>Observación</th><th>Estado</th><th>Hecho</th></tr></thead>
+      <tbody>
+        <tr><td>Release Plan</td><td><span class="chip adj">△ Ajustada</span></td><td>Plan S5–S8 escrito</td></tr>
+        <tr><td>Cerrar R2</td><td><span class="chip adj">△ Ajustada</span></td><td>Producto en local</td></tr>
+        <tr><td>Cola / Textract</td><td><span class="chip adj">△ Ajustada</span></td><td>OCR síncrono local</td></tr>
+        <tr><td>Precisión OCR</td><td><span class="chip ok">✓ Cerrada</span></td><td>v0, 13 PDF, 0,4</td></tr>
+        <tr><td>Dataset ranking</td><td><span class="chip ok">✓ Cerrada</span></td><td>16 consultas</td></tr>
+        <tr><td>Context precision 0,44</td><td><span class="chip adj">△ Ajustada</span></td><td>Medida;</td></tr>
+        <tr><td>Answer relevancy 0,31</td><td><span class="chip adj">△ Ajustada</span></td><td>Extractivo local</td></tr>
+        <tr><td>Eval S4 vs S5</td><td><span class="chip adj">△ Ajustada</span></td><td>5 preguntas; corpus creció</td></tr>
+        <tr><td>Jira → Git → Done</td><td><span class="chip ok">✓ Cerrada</span></td><td>Ticket, 27/27 y Done</td></tr>
+        <tr><td>Demo IA</td><td><span class="chip ok">✓ Cerrada</span></td><td>Diapositivas 9–12</td></tr>
+        <tr><td>E2E / URL nube</td><td><span class="chip pend">● Pendiente</span></td><td>URL en S7</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="foot"><span>guion.md §c</span><span>4 · El Release 2 · 17/19</span></div>
+  <aside class="notes">Titan aporta recuperación; el generador es extractivo. No afirmar que el JSON S4 sea «antes de Titan». Fix version en Jira: por confirmar.</aside>
+</section>
+
+<section class="slide" data-title="Retro S5" data-sec="5">
+  <span class="kicker">Retro S5</span>
+  <h2 class="title">Retrospectiva S5 en Confluence</h2>
+  <div class="body shot-box">
+    <img class="shot" src="assets/confluence-s5.png" alt="Retrospectiva Sprint 5 en Confluence" />
+    <p class="cap">assets/confluence-s5.png · DOC-01 <span data-doc01="text"></span></p>
+  </div>
+  <div class="foot"><span>confluence-sprint-5.md · DOC-01 <span data-doc01="link"></span></span><span>5 · Lo que sigue · 18/19</span></div>
+  <aside class="notes"><b>Slides 18–19.</b> Leer 1 ok / 1 cambiar / 1 acción de la captura. No se inventan ítems de retro.</aside>
+</section>
+
+<section class="slide" data-title="S6 y S7" data-sec="5">
+  <span class="kicker"><span class="chip plan">PLAN</span> Siguiente incremento</span>
+  <h2 class="title">S6 aísla datos. S7 publica la URL.</h2>
+  <div class="body row">
+    <div class="col shot-box">
+      <img class="shot" src="assets/jira-product-backlog.png" alt="Product Backlog actualizado" />
+      <p class="cap">Product Backlog actualizado</p>
+    </div>
+    <div class="col" style="display:flex;flex-direction:column;gap:10px">
+      <div class="card plan"><h3>S6 núcleo</h3><p>US-08: cada usuario ve solo las suyas. Cerrar archivos públicos. Evidencia Scrum del sprint.</p></div>
+      <div class="card"><h3>S6 extra</h3><p>Chat de totales. Exportar CSV. Si no caben, salen primero.</p></div>
+      <div class="card warn"><h3>S7</h3><p>Primero imagen de producción y secretos fuera del código; después URL con HTTPS (EC2 + rol IAM).</p></div>
+    </div>
+  </div>
+  <div class="foot"><span>plan-vigente-s5-s8.md · jira-product-backlog.png</span><span>5 · Lo que sigue · 19/19</span></div>
+  <aside class="notes">Fechas del sprint en Jira pueden no coincidir con el plan. US-08 = SBC-71. La rúbrica de nube se cierra en S7.</aside>
+</section>
+
+</div></div>
+
+<div id="notes-page">
+  <h1>Notas del orador · Avance 6</h1>
+  <p class="lead">Tecla S o ?notas=1. Imprimible. N vuelve a la diapositiva.</p>
+  <div id="notes-list"></div>
+</div>
+
+<div id="nav">
+  <button type="button" id="prev">← Anterior</button>
+  <div id="bar"><i id="prog"></i></div>
+  <span id="ttl"></span>
+  <button type="button" id="next">Siguiente →</button>
+</div>
+
+<script>
+const DOC01 = { estado: "cumplido", hash: "717bbe5e36a7f75cabeb209f63160cbfb75f0a61" };
+
+/* CHARTS_START */
+const CHARTS = {
+  "ranking": [
+    {
+      "id": "Q01",
+      "q": "energia electrica",
+      "target": "DEMO-VEC-05",
+      "hash": 4,
+      "titan": 1
+    },
+    {
+      "id": "Q02",
+      "q": "servicio de luz",
+      "target": "DEMO-VEC-05",
+      "hash": 2,
+      "titan": 1
+    },
+    {
+      "id": "Q03",
+      "q": "cuanto pague de energia",
+      "target": "DEMO-VEC-05",
+      "hash": 1,
+      "titan": 1
+    },
+    {
+      "id": "Q04",
+      "q": "NIT de Aguas de la Sabana",
+      "target": "DEMO-VEC-01",
+      "hash": 1,
+      "titan": 1
+    },
+    {
+      "id": "Q05",
+      "q": "acueducto y alcantarillado",
+      "target": "DEMO-VEC-01",
+      "hash": 1,
+      "titan": 1
+    },
+    {
+      "id": "Q06",
+      "q": "papeleria o utiles de oficina",
+      "target": "DEMO-VEC-03",
+      "hash": 2,
+      "titan": 1
+    },
+    {
+      "id": "Q07",
+      "q": "toner laser y resmas",
+      "target": "DEMO-VEC-03",
+      "hash": 1,
+      "titan": 1
+    },
+    {
+      "id": "Q08",
+      "q": "plan de telefonia movil",
+      "target": "DEMO-VEC-02",
+      "hash": 1,
+      "titan": 1
+    },
+    {
+      "id": "Q09",
+      "q": "internet fibra Claro",
+      "target": "DEMO-VEC-02",
+      "hash": 1,
+      "titan": 1
+    },
+    {
+      "id": "Q10",
+      "q": "combustible para flota",
+      "target": "DEMO-VEC-04",
+      "hash": 1,
+      "titan": 1
+    },
+    {
+      "id": "Q11",
+      "q": "galones de gasolina",
+      "target": "DEMO-VEC-04",
+      "hash": 3,
+      "titan": 1
+    },
+    {
+      "id": "Q12",
+      "q": "licencias Microsoft 365",
+      "target": "DEMO-VEC-06",
+      "hash": 1,
+      "titan": 1
+    },
+    {
+      "id": "Q13",
+      "q": "suscripcion de software",
+      "target": "DEMO-VEC-06",
+      "hash": 1,
+      "titan": 1
+    },
+    {
+      "id": "Q14",
+      "q": "consumo de kWh",
+      "target": "DEMO-VEC-05",
+      "hash": 3,
+      "titan": 1
+    },
+    {
+      "id": "Q15",
+      "q": "canon de arriendo en Madrid",
+      "target": null,
+      "hash": null,
+      "titan": null
+    },
+    {
+      "id": "Q16",
+      "q": "energia electrica Enel",
+      "target": "DEMO-VEC-05",
+      "hash": 1,
+      "titan": 1
+    }
+  ],
+  "ocr": {
+    "global": 0.3333,
+    "labeled": 78,
+    "correct": 26,
+    "files": 13,
+    "missingPredictions": 0,
+    "meetsR2": false,
+    "fields": [
+      {
+        "key": "supplier",
+        "label": "Proveedor",
+        "labeled": 13,
+        "correct": 0,
+        "acc": 0
+      },
+      {
+        "key": "nit",
+        "label": "NIT",
+        "labeled": 13,
+        "correct": 13,
+        "acc": 1
+      },
+      {
+        "key": "issue_date",
+        "label": "Fecha emisión",
+        "labeled": 13,
+        "correct": 0,
+        "acc": 0
+      },
+      {
+        "key": "subtotal",
+        "label": "Subtotal",
+        "labeled": 13,
+        "correct": 0,
+        "acc": 0
+      },
+      {
+        "key": "vat",
+        "label": "IVA",
+        "labeled": 13,
+        "correct": 0,
+        "acc": 0
+      },
+      {
+        "key": "total",
+        "label": "Total",
+        "labeled": 13,
+        "correct": 13,
+        "acc": 1
+      }
+    ]
+  },
+  "ragas": {
+    "metrics": [
+      "faithfulness",
+      "context_precision",
+      "context_recall",
+      "answer_relevancy",
+      "ragas"
+    ],
+    "labels": [
+      "Faithfulness",
+      "Context precision",
+      "Context recall",
+      "Answer relevancy",
+      "RAGAS"
+    ],
+    "antes": {
+      "faithfulness": 1,
+      "context_precision": 0.44,
+      "context_recall": 1,
+      "answer_relevancy": 0.279,
+      "ragas": 0.6797,
+      "provider": "local"
+    },
+    "despues": {
+      "faithfulness": 1,
+      "context_precision": 0.44,
+      "context_recall": 1,
+      "answer_relevancy": 0.3131,
+      "ragas": 0.6883,
+      "provider": "local"
+    }
+  }
+};
+/* CHARTS_END */
+
+const SECTIONS = { 1: "Estado y lo trabajado", 2: "Cómo se llevó a cabo", 3: "Resultados", 4: "El Release 2", 5: "Lo que sigue" };
+const slides = [...document.querySelectorAll(".slide")];
+const stage = document.getElementById("stage");
+let cur = Math.max(0, (parseInt(location.hash.replace("#", ""), 10) || 1) - 1);
+
+function renderDoc01() {
+  const done = Boolean(DOC01.hash);
+  const chip = done ? "✓ Cumplido" : "● Pendiente";
+  const chipClass = done ? "chip ok" : "chip pend";
+  const short = done ? DOC01.hash.slice(0, 7) : "";
+  document.querySelectorAll("[data-doc01]").forEach((el) => {
+    const kind = el.getAttribute("data-doc01");
+    if (kind === "chip") {
+      el.className = chipClass;
+      el.textContent = chip;
+    } else if (kind === "text") {
+      el.textContent = done ? "Cumplido" : "Pendiente";
+    } else if (kind === "link") {
+      if (done) {
+        el.innerHTML = "";
+        const a = document.createElement("a");
+        a.className = "gh";
+        a.setAttribute("data-h", DOC01.hash);
+        a.textContent = short;
+        el.appendChild(a);
+      } else {
+        el.textContent = "Pendiente";
+      }
+    }
+  });
+}
+
+function wireGh() {
+  document.querySelectorAll("a.gh[data-h]").forEach((a) => {
+    a.href = "https://github.com/Rincon3/smartbills-cleaner/commit/" + a.getAttribute("data-h");
+    a.target = "_blank";
+    a.rel = "noopener";
+  });
+}
+
+function fit() {
+  const w = window.innerWidth;
+  const h = window.innerHeight - 52;
+  const s = Math.min(w / 1280, h / 720);
+  stage.style.transform = "scale(" + s + ")";
+}
+
+function show(i) {
+  cur = Math.max(0, Math.min(slides.length - 1, i));
+  slides.forEach((el, n) => el.classList.toggle("active", n === cur));
+  document.getElementById("prog").style.width = ((cur + 1) / slides.length) * 100 + "%";
+  const sec = slides[cur].dataset.sec;
+  document.getElementById("ttl").textContent = (cur + 1) + " / " + slides.length + " · " + SECTIONS[sec];
+  document.getElementById("prev").disabled = cur === 0;
+  document.getElementById("next").disabled = cur === slides.length - 1;
+  history.replaceState(null, "", "#" + (cur + 1));
+}
+
+function bar(svg, x, y, w, h, color) {
+  const r = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+  r.setAttribute("x", x); r.setAttribute("y", y); r.setAttribute("width", w); r.setAttribute("height", h);
+  r.setAttribute("rx", 2); r.setAttribute("fill", color);
+  svg.appendChild(r);
+}
+function txt(svg, x, y, content, opts) {
+  const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
+  t.setAttribute("x", x); t.setAttribute("y", y);
+  t.setAttribute("fill", (opts && opts.fill) || "#10302c");
+  t.setAttribute("font-size", (opts && opts.size) || 16);
+  t.setAttribute("font-family", "Segoe UI, Helvetica Neue, Arial, sans-serif");
+  t.setAttribute("font-weight", (opts && opts.w) || "700");
+  if (opts && opts.anchor) t.setAttribute("text-anchor", opts.anchor);
+  t.textContent = content;
+  svg.appendChild(t);
+}
+function line(svg, x1, y1, x2, y2, color) {
+  const l = document.createElementNS("http://www.w3.org/2000/svg", "line");
+  l.setAttribute("x1", x1); l.setAttribute("y1", y1); l.setAttribute("x2", x2); l.setAttribute("y2", y2);
+  l.setAttribute("stroke", color); l.setAttribute("stroke-width", "1");
+  svg.appendChild(l);
+}
+
+function drawRanking(svg) {
+  const rows = (CHARTS.ranking || []).filter((row) => row.hash != null && row.titan != null);
+  const left = 28, top = 8, width = 200, height = 150, maxRank = 5;
+  line(svg, left, top, left, top + height, "#d3e1de");
+  for (let r = 1; r <= maxRank; r += 1) {
+    const y = top + ((r - 1) / (maxRank - 1)) * height;
+    line(svg, left, y, left + width, y, "#eef3f2");
+    txt(svg, 4, y + 6, String(r), { size: 16, fill: "#5f7a75" });
+  }
+  const gap = width / rows.length;
+  rows.forEach((row, i) => {
+    const x = left + i * gap + gap / 2;
+    const plot = (rank, color) => {
+      if (rank == null) return;
+      const y = top + ((Math.min(rank, maxRank) - 1) / (maxRank - 1)) * height;
+      const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      c.setAttribute("cx", x); c.setAttribute("cy", y); c.setAttribute("r", row.id === "Q01" ? 5 : 3.5);
+      c.setAttribute("fill", color);
+      svg.appendChild(c);
+    };
+    plot(row.hash, "#6b7c78");
+    plot(row.titan, "#0f8b7d");
+  });
+}
+
+function drawFirstPlace(svg) {
+  const rows = (CHARTS.ranking || []).filter((row) => row.hash != null && row.titan != null);
+  const hashFirst = rows.filter((row) => row.hash === 1).length;
+  const titanFirst = rows.filter((row) => row.titan === 1).length;
+  const n = rows.length || 15;
+  const top = 16, height = 140, left = 40, colW = 70, gap = 36, max = n;
+  const cols = [
+    { x: left, val: hashFirst, color: "#6b7c78", label: "Hash" },
+    { x: left + colW + gap, val: titanFirst, color: "#0f8b7d", label: "Titan" }
+  ];
+  line(svg, 28, top + height, 220, top + height, "#d3e1de");
+  cols.forEach((col) => {
+    const h = (col.val / max) * height;
+    bar(svg, col.x, top + height - h, colW, h, col.color);
+    txt(svg, col.x + colW / 2, top + height - h - 8, col.val + "/" + n, { size: 16, anchor: "middle" });
+    txt(svg, col.x + colW / 2, top + height + 22, col.label, { size: 16, anchor: "middle" });
+  });
+}
+
+function drawGains(svg) {
+  const gains = (CHARTS.ranking || []).filter((row) => row.hash != null && row.titan != null && row.hash > row.titan);
+  const left = 44, barW = 140, rowH = 36, maxRank = 5;
+  const score = (rank) => ((maxRank - Math.min(rank, maxRank) + 1) / maxRank) * barW;
+  gains.forEach((row, i) => {
+    const y = 8 + i * rowH;
+    txt(svg, 4, y + 20, row.id, { size: 16 });
+    bar(svg, left, y + 4, barW, 8, "#e6efed");
+    bar(svg, left, y + 4, Math.max(10, score(row.hash)), 8, "#6b7c78");
+    bar(svg, left, y + 16, barW, 8, "#e6efed");
+    bar(svg, left, y + 16, Math.max(10, score(row.titan)), 8, "#0f8b7d");
+    txt(svg, 236, y + 20, row.hash + "→" + row.titan, { size: 16, anchor: "end" });
+  });
+}
+
+function drawCharts() {
+  if (!CHARTS.ranking) return;
+  const rank = document.getElementById("chart-rank");
+  const first = document.getElementById("chart-first");
+  const gains = document.getElementById("chart-gains");
+  if (rank && !rank.childElementCount) drawRanking(rank);
+  if (first && !first.childElementCount) drawFirstPlace(first);
+  if (gains && !gains.childElementCount) drawGains(gains);
+}
+
+function buildNotesPage() {
+  const box = document.getElementById("notes-list");
+  box.innerHTML = "";
+  slides.forEach((slide, i) => {
+    const note = slide.querySelector(".notes");
+    const item = document.createElement("article");
+    item.className = "n-item";
+    const h = document.createElement("h2");
+    h.textContent = (i + 1) + ". " + (slide.dataset.title || "");
+    const p = document.createElement("p");
+    p.textContent = note ? note.innerText : "";
+    item.appendChild(h);
+    item.appendChild(p);
+    box.appendChild(item);
+  });
+}
+
+function setNotesMode(on) {
+  document.body.classList.toggle("notes-mode", on);
+  if (on) {
+    const url = new URL(location.href);
+    url.searchParams.set("notas", "1");
+    history.replaceState(null, "", url.pathname + url.search + url.hash);
+  } else {
+    const url = new URL(location.href);
+    url.searchParams.delete("notas");
+    history.replaceState(null, "", url.pathname + (url.searchParams.toString() ? "?" + url.searchParams : "") + url.hash);
+    fit();
+  }
+}
+
+document.getElementById("prev").onclick = () => show(cur - 1);
+document.getElementById("next").onclick = () => show(cur + 1);
+document.addEventListener("keydown", (e) => {
+  if (e.key === "s" || e.key === "S") { e.preventDefault(); setNotesMode(!document.body.classList.contains("notes-mode")); return; }
+  if (document.body.classList.contains("notes-mode")) return;
+  if (["ArrowRight", "PageDown", " ", "Enter"].includes(e.key)) { e.preventDefault(); show(cur + 1); }
+  if (["ArrowLeft", "PageUp", "Backspace"].includes(e.key)) { e.preventDefault(); show(cur - 1); }
+  if (e.key === "Home") { e.preventDefault(); show(0); }
+  if (e.key === "End") { e.preventDefault(); show(slides.length - 1); }
+  if (e.key === "n" || e.key === "N") { document.body.classList.toggle("show-notes"); }
+  if (e.key === "f" || e.key === "F") {
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+    else document.exitFullscreen();
+  }
+});
+window.addEventListener("resize", fit);
+window.addEventListener("hashchange", () => {
+  const n = parseInt(location.hash.replace("#", ""), 10) || 1;
+  show(n - 1);
+});
+
+renderDoc01();
+wireGh();
+buildNotesPage();
+drawCharts();
+fit();
+show(cur);
+if (new URLSearchParams(location.search).get("notas") === "1") setNotesMode(true);
+</script>
+</body>
+</html>

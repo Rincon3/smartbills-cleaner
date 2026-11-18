@@ -1,0 +1,68 @@
+Issue ID,Issue Type,Summary,Description,Story Points,Priority,Sprint,Labels,Labels,Labels,Labels
+201,Story,[US-08] Aislar facturas por ownerId y cerrar /uploads,"Como usuario autenticado, quiero ver y consultar solo mis facturas, y que un Viewer no pueda cargarlas ni borrarlas.
+
+Excel US-08 crit. 1 y 3 (crit. 2 desactivar = WONT). Nucleo. Primero del S6. Ninguna demo ni despliegue con datos reales antes de Done.
+
+Helper unico; 12 call sites. Quitar express.static /uploads; archivo solo por GET /api/invoices/:id/file autenticado. VIEWER lectura propia; ANALYST CRUD propio; ADMIN todas.
+
+Criterios de aceptacion
+- Exito: el usuario A no ve facturas de B en listado, busqueda, dashboard ni query; /uploads sin token no responde 200.
+- Error: acceso a un id ajeno responde 404 (no 403).
+- Permiso: VIEWER recibe 403 en upload, PUT y DELETE.",2,Highest,S6,excel-us-08,nucleo,,
+202,Story,[US-05] Chatbot NL: analitica de BD + RAG de mis facturas,"Como analista financiero, quiero preguntar en espanol por totales o el mayor gasto y obtener respuesta citada o sin evidencia.
+
+Excel US-05. Extra (cae 4). El RAG con citas de S4 sigue Done. Depende de US-08. Historial de sesion, no BD.
+
+Criterios de aceptacion
+- Exito: una pregunta de mayor gasto o total usa las facturas del usuario y cita fuente o declara que no hay evidencia.
+- Error: si el LLM no esta, responde el generador local (no 500).
+- Permiso: la respuesta no incluye facturas de otro usuario.
+
+Meta, no criterio de aceptacion: latencia < 4 s.",8,High,S6,excel-us-05,extra,cae-4,
+203,Story,[US-12] Exportar facturas propias a CSV,"Como usuario, quiero exportar mis facturas a CSV.
+
+Excel US-12. Extra (cae 2). Sin XLSX.
+
+Criterios de aceptacion
+- Exito: el CSV descarga las columnas proveedor, NIT, fecha, subtotal, IVA y total de las facturas del usuario.
+- Error: formato=xlsx responde 400 con mensaje claro.
+- Permiso: un VIEWER solo exporta las suyas.
+
+Meta, no criterio de aceptacion: < 5 s para 1000 facturas.",2,Medium,S6,excel-us-12,extra,cae-2,
+204,Story,"[TK-04] Dockerfile de produccion, vite build y secretos","Como tesista, quiero imagen de produccion (backend + frontend vite build) y JWT/secretos fuera del git, para no esperar a AWS.
+
+Excel TK-04 (parte a). Nucleo. Primeros 2 SP del S7. No necesita Lightsail ni S3. /uploads ya se cerro en US-08.
+
+Incluye: Dockerfile frontend (vite build); JWT_SECRET distinto de change-me; no secretos en git; seed desactivado o documentado fuera de produccion.
+
+Criterios de aceptacion
+- Exito: el build de produccion sirve el frontend compilado (no vite dev) y el API arranca.
+- Error: sin .env no se usa change-me en silencio; un secreto en el repo hace fallar la historia.",2,Highest,S7,excel-tk-04,nucleo,tk-04a,
+205,Story,[TK-04] Publicar HTTPS y persistencia (Plan A o B),"Como tesista, quiero una URL de pruebas con HTTPS y disco persistente segun el PLAN_* de X-01.
+
+Excel TK-04 (parte b). Nucleo. Depende de X-01 y de la parte a. Plan A: Lightsail/EC2 + Compose + volumen. Plan B: Render. Bedrock: rol IAM (A) o clave persistente (B); si no hay, modo degradado. No copiar keys de Vocareum. No facturas reales si US-08 no esta Done.
+
+Criterios de aceptacion
+- Exito: hay URL HTTPS (o se documenta el bloqueo) y los PDF sobreviven un restart del plan elegido.
+- Error: Educate no se usa como hosting si el lab se destruye al logout (hay que Plan B).
+- Permiso: GET /uploads/archivo sin token no responde 200.
+
+Meta, no criterio de aceptacion: Titan/LLM disponibles en el hosting (si no, modo degradado documentado).",6,Highest,S7,excel-tk-04,nucleo,tk-04b,
+206,Story,[US-02] parseMoney COP y fecha de vencimiento,"Como usuario, quiero montos COP y vencimiento correctos.
+
+Excel US-02. Extra (cae 3). No tunear el extractor contra el gold de S5.
+
+Criterios de aceptacion
+- Exito: 139.820 en texto COP se interpreta como 139820, no 139.82.
+- Error: si el texto no trae vencimiento, el campo queda No identificado (no se inventa una fecha).",3,Medium,S7,excel-us-02,extra,cae-3,
+207,Story,[X-02] CI minimo: unitarias backend en cada PR,"Como tesista, quiero que cada PR a main ejecute las unitarias del backend.
+
+Extra (cae 1). No comprometido en los 12 del S7; solo si sobra capacidad. Workflow Node 20, npm test del backend, sin secretos.
+
+Criterios de aceptacion
+- Exito: un PR con tests sanos deja el check verde.
+- Error: un test roto deja el check rojo; el YAML no imprime JWT_SECRET ni keys AWS.",1,Low,S7,extra,cae-1,x-02,
+208,Story,[US-11] Dashboard analitico (WONT S5-S8),"Desvio. En el v2 es Release 3. El MVP ya tiene KPI. No reabrir en S5-S8. Si ya existe el ticket en Jira, moverlo a Wont y no crear duplicado.
+
+Criterios de aceptacion
+- Exito: el ticket queda en Wont con comentario de desvio al director.",5,Low,,excel-us-11,wont,,
