@@ -5,12 +5,18 @@ import { generateWithConsensus } from "./consensus.js";
 import { formatRetrievedSources, renderCitationPrompt } from "./prompt.js";
 import { InvoiceChunkRetriever, documentToHit } from "./retriever.js";
 
-export function createRetrievalQaChain({ k = RAG_TOP_K, invoiceId = null, filters = {} } = {}) {
+export function createRetrievalQaChain({ k = RAG_TOP_K, invoiceId = null, filters = {}, user = null } = {}) {
   const retrieve = RunnableLambda.from(async (input) => {
     const question = typeof input === "string" ? input : input.question;
     const scopedId = typeof input === "object" && input.invoiceId !== undefined ? input.invoiceId : invoiceId;
     const scopedFilters = typeof input === "object" && input.filters ? input.filters : filters;
-    const retriever = new InvoiceChunkRetriever({ k, invoiceId: scopedId, filters: scopedFilters });
+    const scopedUser = typeof input === "object" && input.user !== undefined ? input.user : user;
+    const retriever = new InvoiceChunkRetriever({
+      k,
+      invoiceId: scopedId,
+      filters: scopedFilters,
+      user: scopedUser
+    });
     const docs = await retriever.invoke(question);
     const hits = docs.map(documentToHit);
     const prompt = renderCitationPrompt({
@@ -53,7 +59,7 @@ export function createRetrievalQaChain({ k = RAG_TOP_K, invoiceId = null, filter
   return RunnableSequence.from([retrieve, generate]);
 }
 
-export async function runRetrievalQa({ question, invoiceId = null, filters = {}, k = RAG_TOP_K }) {
-  const chain = createRetrievalQaChain({ k, invoiceId, filters });
-  return chain.invoke({ question, invoiceId, filters });
+export async function runRetrievalQa({ question, invoiceId = null, filters = {}, user = null, k = RAG_TOP_K }) {
+  const chain = createRetrievalQaChain({ k, invoiceId, filters, user });
+  return chain.invoke({ question, invoiceId, filters, user });
 }

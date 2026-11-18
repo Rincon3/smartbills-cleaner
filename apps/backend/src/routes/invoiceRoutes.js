@@ -2,6 +2,8 @@ import { Router } from "express";
 import fs from "fs";
 import multer from "multer";
 import { prisma } from "../config/prisma.js";
+import { requireRole } from "../middleware/auth.js";
+import { canReadInvoice, invoiceWhereFor } from "../services/access.js";
 import { createAuditLog } from "../services/auditService.js";
 import { indexInvoiceChunks } from "../services/chunkIndexService.js";
 import { isEmbeddingUnavailable } from "../utils/titanEmbeddings.js";
@@ -9,6 +11,23 @@ import { searchInvoicesHybrid } from "../services/invoiceSearchService.js";
 import { processInvoiceDocument } from "../services/ocr/processInvoiceDocument.js";
 import { getClientIp } from "../utils/http.js";
 import { resolveStoredFile, uploadsDir } from "../utils/paths.js";
+
+function notFound(res) {
+  return res.status(404).json({ message: "Factura no encontrada" });
+}
+
+async function findReadableInvoice(req, include) {
+  const invoice = await prisma.invoice.findUnique({
+    where: { id: req.params.id },
+    ...(include ? { include } : {})
+  });
+
+  if (!canReadInvoice(req.user, invoice)) {
+    return null;
+  }
+
+  return invoice;
+}
 
 fs.mkdirSync(uploadsDir, { recursive: true });
 
@@ -92,7 +111,7 @@ function toInvoiceResponse(invoice) {
 export const invoiceRouter = Router();
 
 invoiceRouter.get("/search", async (req, res) => {
-  const result = await searchInvoicesHybrid(req.query);
+  const result = await searchInvoicesHybrid(req.query, req.user);
   return res.json({
     invoices: result.invoices.map((invoice) => ({
       ...toInvoiceResponse(invoice),
@@ -112,6 +131,7 @@ invoiceRouter.get("/", async (req, res) => {
 
   const invoices = await prisma.invoice.findMany({
     where: {
+      ...invoiceWhereFor(req.user),
       ...(status ? { status } : {}),
       ...(supplier
         ? {
@@ -138,23 +158,20 @@ invoiceRouter.get("/", async (req, res) => {
 });
 
 invoiceRouter.get("/:id", async (req, res) => {
-  const invoice = await prisma.invoice.findUnique({
-    where: { id: req.params.id },
-    include: { fields: true }
-  });
+  const invoice = await findReadableInvoice(req, { fields: true });
 
   if (!invoice) {
-    return res.status(404).json({ message: "Factura no encontrada" });
+    return notFound(res);
   }
 
   return res.json(toInvoiceResponse(invoice));
 });
 
 invoiceRouter.get("/:id/file", async (req, res) => {
-  const invoice = await prisma.invoice.findUnique({ where: { id: req.params.id } });
+  const invoice = await findReadableInvoice(req);
 
   if (!invoice) {
-    return res.status(404).json({ message: "Factura no encontrada" });
+    return notFound(res);
   }
 
   const diskPath = resolveStoredFile(invoice.filePath);
@@ -169,17 +186,14 @@ invoiceRouter.get("/:id/file", async (req, res) => {
 });
 
 invoiceRouter.get("/:id/chunks", async (req, res) => {
-  const invoice = await prisma.invoice.findUnique({
-    where: { id: req.params.id },
-    include: {
-      chunks: {
-        orderBy: { page: "asc" }
-      }
+  const invoice = await findReadableInvoice(req, {
+    chunks: {
+      orderBy: { page: "asc" }
     }
   });
 
   if (!invoice) {
-    return res.status(404).json({ message: "Factura no encontrada" });
+    return notFound(res);
   }
 
   return res.json(
@@ -196,7 +210,7 @@ invoiceRouter.get("/:id/chunks", async (req, res) => {
   );
 });
 
-invoiceRouter.post("/upload", upload.single("file"), async (req, res) => {
+invoiceRouter.post("/upload", requireRole("ADMIN", "ANALYST"), upload.single("file"), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ message: "Archivo requerido" });
   }
@@ -287,12 +301,12 @@ invoiceRouter.post("/upload", upload.single("file"), async (req, res) => {
   return res.status(201).json(toInvoiceResponse(created));
 });
 
-invoiceRouter.put("/:id", async (req, res) => {
+invoiceRouter.put("/:id", requireRole("ADMIN", "ANALYST"), async (req, res) => {
   const { supplier, taxId, issueDate, subtotal, vat, total, status, fields } = req.body;
-  const existing = await prisma.invoice.findUnique({ where: { id: req.params.id }, include: { fields: true } });
+  const existing = await findReadableInvoice(req, { fields: true });
 
   if (!existing) {
-    return res.status(404).json({ message: "Factura no encontrada" });
+    return notFound(res);
   }
 
   await prisma.invoiceField.deleteMany({ where: { invoiceId: existing.id } });
@@ -348,11 +362,11 @@ invoiceRouter.put("/:id", async (req, res) => {
   return res.json(toInvoiceResponse(updated));
 });
 
-invoiceRouter.delete("/:id", async (req, res) => {
-  const invoice = await prisma.invoice.findUnique({ where: { id: req.params.id } });
+invoiceRouter.delete("/:id", requireRole("ADMIN", "ANALYST"), async (req, res) => {
+  const invoice = await findReadableInvoice(req);
 
   if (!invoice) {
-    return res.status(404).json({ message: "Factura no encontrada" });
+    return notFound(res);
   }
 
   const diskPath = resolveStoredFile(invoice.filePath);

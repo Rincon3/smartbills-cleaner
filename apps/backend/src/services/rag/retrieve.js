@@ -32,25 +32,26 @@ export function rankHits(question, candidates, limit = RAG_TOP_K) {
   return ranked;
 }
 
-export async function retrieveInvoiceHits({ question, invoiceId = null, filters = {}, limit = RAG_TOP_K }) {
+export async function retrieveInvoiceHits({
+  question,
+  invoiceId = null,
+  filters = {},
+  user = null,
+  limit = RAG_TOP_K
+}) {
   const parsed = parseSearchFilters({ ...filters, q: question });
-  const where = buildInvoiceWhere(parsed);
-  const hasSqlFilter = Boolean(
-    parsed.supplier || parsed.status || parsed.from || parsed.to || parsed.minTotal != null || parsed.maxTotal != null
-  );
+  const where = {
+    ...buildInvoiceWhere(parsed, user),
+    ...(invoiceId ? { id: invoiceId } : {})
+  };
 
-  let invoiceIds = null;
-  if (invoiceId) {
-    invoiceIds = [invoiceId];
-  } else if (hasSqlFilter) {
-    const scoped = await prisma.invoice.findMany({
-      where,
-      select: { id: true }
-    });
-    invoiceIds = scoped.map((invoice) => invoice.id);
-    if (!invoiceIds.length) {
-      return { candidates: [], hits: [] };
-    }
+  const scoped = await prisma.invoice.findMany({
+    where,
+    select: { id: true }
+  });
+  const invoiceIds = scoped.map((invoice) => invoice.id);
+  if (!invoiceIds.length) {
+    return { candidates: [], hits: [] };
   }
 
   try {

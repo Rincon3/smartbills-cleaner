@@ -1,5 +1,6 @@
 import { prisma } from "../config/prisma.js";
 import { embedQuery, isEmbeddingUnavailable } from "../utils/titanEmbeddings.js";
+import { invoiceWhereFor } from "./access.js";
 import { lexicalOverlap, searchSimilarChunks } from "./vectorStore.js";
 
 function optionalNumber(value) {
@@ -40,8 +41,9 @@ export function parseSearchFilters(input = {}) {
   };
 }
 
-export function buildInvoiceWhere(filters) {
+export function buildInvoiceWhere(filters, user) {
   return {
+    ...invoiceWhereFor(user),
     ...(filters.status ? { status: filters.status } : {}),
     ...(filters.supplier
       ? {
@@ -102,10 +104,10 @@ export function collapseChunksToInvoices(invoices, chunks) {
   return [...byId.values()].sort((left, right) => Number(right.score || 0) - Number(left.score || 0));
 }
 
-export async function searchInvoicesHybrid(rawFilters = {}) {
+export async function searchInvoicesHybrid(rawFilters = {}, user = null) {
   const started = Date.now();
   const filters = parseSearchFilters(rawFilters);
-  const where = buildInvoiceWhere(filters);
+  const where = buildInvoiceWhere(filters, user);
 
   const invoices = await prisma.invoice.findMany({
     where,

@@ -3,6 +3,8 @@ import { api } from "../api/client";
 import { AdvancedSearchForm, emptyFilters } from "../components/AdvancedSearchForm";
 import { Icon } from "../components/Icon";
 import { InvoiceEditor } from "../components/InvoiceEditor";
+import { useAuth } from "../context/AuthContext";
+import { canMutateInvoices } from "../utils/access";
 
 function formatCurrency(value) {
   return new Intl.NumberFormat("es-CO", {
@@ -13,6 +15,8 @@ function formatCurrency(value) {
 }
 
 export function InvoicesPage() {
+  const { user } = useAuth();
+  const canMutate = canMutateInvoices(user);
   const [filters, setFilters] = useState(emptyFilters);
   const [invoices, setInvoices] = useState([]);
   const [meta, setMeta] = useState({ elapsedMs: null, mode: "sql", withinSla: true });
@@ -174,9 +178,11 @@ export function InvoicesPage() {
                     >
                       Ver
                     </button>
-                    <button className="ghost-button danger" type="button" onClick={() => setPendingDelete(invoice)}>
-                      Eliminar
-                    </button>
+                    {canMutate ? (
+                      <button className="ghost-button danger" type="button" onClick={() => setPendingDelete(invoice)}>
+                        Eliminar
+                      </button>
+                    ) : null}
                     <Icon name="more" className="more-icon" />
                   </td>
                 </tr>
@@ -189,6 +195,7 @@ export function InvoicesPage() {
       {selectedInvoice ? (
         <InvoiceEditor
           invoice={selectedInvoice}
+          readOnly={!canMutate}
           onClose={() => setSelectedInvoice(null)}
           onSave={handleSave}
         />

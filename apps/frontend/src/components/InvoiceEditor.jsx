@@ -10,7 +10,7 @@ const labelToField = {
   Total: "total"
 };
 
-export function InvoiceEditor({ invoice, onClose, onSave }) {
+export function InvoiceEditor({ invoice, onClose, onSave, readOnly = false }) {
   const [form, setForm] = useState(invoice);
   const [saving, setSaving] = useState(false);
 
@@ -37,6 +37,9 @@ export function InvoiceEditor({ invoice, onClose, onSave }) {
 
   const submit = async (event) => {
     event.preventDefault();
+    if (readOnly) {
+      return;
+    }
     setSaving(true);
 
     try {
@@ -72,17 +75,26 @@ export function InvoiceEditor({ invoice, onClose, onSave }) {
         <form className="drawer-form" onSubmit={submit}>
           <label>
             Proveedor
-            <input value={form.supplier} onChange={(e) => handleRootChange("supplier", e.target.value)} />
+            <input
+              value={form.supplier}
+              disabled={readOnly}
+              onChange={(e) => handleRootChange("supplier", e.target.value)}
+            />
           </label>
           <label>
             NIT
-            <input value={form.taxId} onChange={(e) => handleRootChange("taxId", e.target.value)} />
+            <input
+              value={form.taxId}
+              disabled={readOnly}
+              onChange={(e) => handleRootChange("taxId", e.target.value)}
+            />
           </label>
           <label>
             Fecha
             <input
               type="date"
               value={String(form.issueDate).slice(0, 10)}
+              disabled={readOnly}
               onChange={(e) => handleRootChange("issueDate", e.target.value)}
             />
           </label>
@@ -93,12 +105,19 @@ export function InvoiceEditor({ invoice, onClose, onSave }) {
                 type="number"
                 step="0.01"
                 value={form.subtotal}
+                disabled={readOnly}
                 onChange={(e) => handleRootChange("subtotal", e.target.value)}
               />
             </label>
             <label>
               IVA
-              <input type="number" step="0.01" value={form.vat} onChange={(e) => handleRootChange("vat", e.target.value)} />
+              <input
+                type="number"
+                step="0.01"
+                value={form.vat}
+                disabled={readOnly}
+                onChange={(e) => handleRootChange("vat", e.target.value)}
+              />
             </label>
           </div>
           <label>
@@ -107,12 +126,17 @@ export function InvoiceEditor({ invoice, onClose, onSave }) {
               type="number"
               step="0.01"
               value={form.total}
+              disabled={readOnly}
               onChange={(e) => handleRootChange("total", e.target.value)}
             />
           </label>
           <label>
             Estado
-            <select value={form.status} onChange={(e) => handleRootChange("status", e.target.value)}>
+            <select
+              value={form.status}
+              disabled={readOnly}
+              onChange={(e) => handleRootChange("status", e.target.value)}
+            >
               <option value="QUEUED">En cola</option>
               <option value="PROCESSING">Procesando</option>
               <option value="PROCESSED">Procesada</option>
@@ -133,6 +157,7 @@ export function InvoiceEditor({ invoice, onClose, onSave }) {
                   <span>{field.label}</span>
                   <input
                     value={field.value}
+                    disabled={readOnly}
                     onChange={(e) => handleFieldChange(index, "value", e.target.value)}
                   />
                 </div>
@@ -144,6 +169,7 @@ export function InvoiceEditor({ invoice, onClose, onSave }) {
                     max="1"
                     step="0.01"
                     value={field.confidence}
+                    disabled={readOnly}
                     onChange={(e) => handleFieldChange(index, "confidence", e.target.value)}
                   />
                 </label>
@@ -151,9 +177,11 @@ export function InvoiceEditor({ invoice, onClose, onSave }) {
             ))}
           </div>
 
-          <button className="primary-button" type="submit" disabled={saving}>
-            {saving ? "Guardando..." : "Guardar validacion"}
-          </button>
+          {readOnly ? null : (
+            <button className="primary-button" type="submit" disabled={saving}>
+              {saving ? "Guardando..." : "Guardar validacion"}
+            </button>
+          )}
         </form>
       </aside>
     </div>

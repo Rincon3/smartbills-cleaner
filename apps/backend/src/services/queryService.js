@@ -1,4 +1,5 @@
 import { prisma } from "../config/prisma.js";
+import { canReadInvoice } from "./access.js";
 import { buildCitationLabel } from "./invoiceDocument.js";
 import { runRetrievalQa } from "./rag/chain.js";
 import { RAG_TOP_K } from "./rag/constants.js";
@@ -17,12 +18,13 @@ function toPublicChunk(chunk, score = null) {
   };
 }
 
-export async function queryInvoices({ question, invoiceId = null, filters = {}, limit = RAG_TOP_K }) {
+export async function queryInvoices({ question, invoiceId = null, filters = {}, user = null, limit = RAG_TOP_K }) {
   const started = Date.now();
   const result = await runRetrievalQa({
     question,
     invoiceId,
     filters,
+    user,
     k: Number(limit) || RAG_TOP_K
   });
 
@@ -51,7 +53,7 @@ export async function queryInvoices({ question, invoiceId = null, filters = {}, 
   };
 }
 
-export async function getChunkSource({ chunkId, invoiceId, invoiceCode, page }) {
+export async function getChunkSource({ chunkId, invoiceId, invoiceCode, page, user = null }) {
   let resolvedInvoiceId = invoiceId;
 
   if (!chunkId && !resolvedInvoiceId && invoiceCode) {
@@ -76,13 +78,14 @@ export async function getChunkSource({ chunkId, invoiceId, invoiceCode, page }) 
           code: true,
           supplier: true,
           fileName: true,
-          filePath: true
+          filePath: true,
+          ownerId: true
         }
       }
     }
   });
 
-  if (!chunk) {
+  if (!chunk || !canReadInvoice(user, chunk.invoice)) {
     return null;
   }
 

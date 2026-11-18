@@ -1,11 +1,13 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { navigation } from "../data/navigation";
+import { navigationFor } from "../data/navigation";
 import { Icon } from "../components/Icon";
 import { useAuth } from "../context/AuthContext";
+import { canMutateInvoices } from "../utils/access";
 
 export function AppLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const items = navigationFor(user);
 
   return (
     <div className="app-shell">
@@ -19,7 +21,7 @@ export function AppLayout() {
         </div>
 
         <nav className="sidebar-nav">
-          {navigation.map((item) => (
+          {items.map((item) => (
             <NavLink key={item.to} to={item.to} end={item.to === "/app"} className="nav-item">
               <Icon name={item.icon} className="nav-icon" />
               <span>{item.label}</span>
@@ -27,9 +29,11 @@ export function AppLayout() {
           ))}
         </nav>
 
-        <button className="primary-button sidebar-cta" type="button" onClick={() => navigate("/app/upload")}>
-          Cargar factura
-        </button>
+        {canMutateInvoices(user) ? (
+          <button className="primary-button sidebar-cta" type="button" onClick={() => navigate("/app/upload")}>
+            Cargar factura
+          </button>
+        ) : null}
 
         <div className="sidebar-user">
           <div className="avatar">{user?.name?.slice(0, 1) || "S"}</div>

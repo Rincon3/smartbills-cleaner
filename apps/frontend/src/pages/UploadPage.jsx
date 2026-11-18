@@ -1,8 +1,12 @@
 import { useRef, useState } from "react";
 import { api } from "../api/client";
 import { DocumentPreview } from "../components/DocumentPreview";
+import { useAuth } from "../context/AuthContext";
+import { canMutateInvoices } from "../utils/access";
 
 export function UploadPage() {
+  const { user } = useAuth();
+  const canUpload = canMutateInvoices(user);
   const inputRef = useRef(null);
   const [dragging, setDragging] = useState(false);
   const [uploadedInvoice, setUploadedInvoice] = useState(null);
@@ -32,6 +36,20 @@ export function UploadPage() {
       await handleUpload(file);
     }
   };
+
+  if (!canUpload) {
+    return (
+      <section className="page">
+        <div className="page-header compact">
+          <div>
+            <p className="eyebrow">Carga documental</p>
+            <h1>Subir factura</h1>
+            <p>Tu rol solo permite consultar las facturas propias. Un analista o administrador debe cargar documentos.</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="page">
