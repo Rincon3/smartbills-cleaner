@@ -112,5 +112,18 @@ export const api = {
       Object.entries(params).filter(([, value]) => value !== undefined && value !== "")
     );
     return request(`/query/source?${search.toString()}`);
+  },
+  exportInvoicesCsv: async () => {
+    const token = localStorage.getItem("smartbills_token");
+    const response = await fetch(`${API_URL}/invoices/export?format=csv`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.message || "No se pudo exportar el CSV");
+    }
+
+    return response.blob();
   }
 };

@@ -7,6 +7,7 @@ import { canReadInvoice, invoiceWhereFor } from "../services/access.js";
 import { createAuditLog } from "../services/auditService.js";
 import { indexInvoiceChunks } from "../services/chunkIndexService.js";
 import { isEmbeddingUnavailable } from "../utils/titanEmbeddings.js";
+import { invoicesToCsv } from "../services/invoiceCsv.js";
 import { searchInvoicesHybrid } from "../services/invoiceSearchService.js";
 import { processInvoiceDocument } from "../services/ocr/processInvoiceDocument.js";
 import { getClientIp } from "../utils/http.js";
@@ -124,6 +125,28 @@ invoiceRouter.get("/search", async (req, res) => {
     mode: result.mode,
     withinSla: result.elapsedMs < 4000
   });
+});
+
+invoiceRouter.get("/export", async (req, res) => {
+  const format = String(req.query.format || "csv").trim().toLowerCase();
+
+  if (format === "xlsx" || format === "xls") {
+    return res.status(400).json({ message: "Solo se admite formato CSV" });
+  }
+
+  if (format && format !== "csv") {
+    return res.status(400).json({ message: "Solo se admite formato CSV" });
+  }
+
+  const invoices = await prisma.invoice.findMany({
+    where: invoiceWhereFor(req.user),
+    orderBy: { issueDate: "desc" }
+  });
+
+  const csv = invoicesToCsv(invoices);
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", 'attachment; filename="facturas.csv"');
+  return res.status(200).send(csv);
 });
 
 invoiceRouter.get("/", async (req, res) => {

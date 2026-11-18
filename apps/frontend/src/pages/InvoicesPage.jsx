@@ -24,6 +24,7 @@ export function InvoicesPage() {
   const [error, setError] = useState("");
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null);
+  const [exporting, setExporting] = useState(false);
 
   const loadInvoices = async (nextFilters = filters) => {
     setLoading(true);
@@ -70,6 +71,26 @@ export function InvoicesPage() {
     await loadInvoices();
   };
 
+  const handleExportCsv = async () => {
+    setExporting(true);
+    setError("");
+    try {
+      const blob = await api.exportInvoicesCsv();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "facturas.csv";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (exportError) {
+      setError(exportError.message);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <section className="page">
       <div className="page-header compact">
@@ -81,7 +102,11 @@ export function InvoicesPage() {
             texto.
           </p>
         </div>
-        <div className="stats-inline">
+        <div className="page-actions">
+          <button className="ghost-button" type="button" onClick={handleExportCsv} disabled={exporting}>
+            {exporting ? "Exportando..." : "Exportar CSV"}
+          </button>
+          <div className="stats-inline">
           <div>
             <span>Resultados</span>
             <strong>{totals.total}</strong>
@@ -96,6 +121,7 @@ export function InvoicesPage() {
               {meta.elapsedMs == null ? "—" : `${meta.elapsedMs} ms`}
               {meta.withinSla === false ? " · >4s" : ""}
             </strong>
+          </div>
           </div>
         </div>
       </div>
