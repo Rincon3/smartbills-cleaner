@@ -11,7 +11,15 @@ async function buildPasswordHashes() {
   };
 }
 
+export function shouldRunSeed(processEnv = process.env) {
+  return !(processEnv.NODE_ENV === "production" && processEnv.ALLOW_SEED !== "true");
+}
+
 export async function seedDatabase({ reset = false } = {}) {
+  if (!shouldRunSeed()) {
+    return { skipped: true, reason: "production" };
+  }
+
   if (reset) {
     await prisma.invoiceChunk.deleteMany();
     await prisma.invoiceField.deleteMany();

@@ -2,6 +2,17 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+export function assertProductionSecrets(processEnv = process.env) {
+  if (processEnv.NODE_ENV !== "production") {
+    return;
+  }
+
+  const secret = String(processEnv.JWT_SECRET || "").trim();
+  if (!secret || secret === "change-me") {
+    throw new Error("JWT_SECRET must be set to a non-default value when NODE_ENV=production");
+  }
+}
+
 export const env = {
   port: Number(process.env.PORT || 4000),
   jwtSecret: process.env.JWT_SECRET || "change-me",

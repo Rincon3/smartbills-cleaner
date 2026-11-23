@@ -1,6 +1,6 @@
 import express from "express";
 import cors from "cors";
-import { env } from "./config/env.js";
+import { assertProductionSecrets, env } from "./config/env.js";
 import { authMiddleware, requireRole } from "./middleware/auth.js";
 import { authRouter } from "./routes/authRoutes.js";
 import { dashboardRouter } from "./routes/dashboardRoutes.js";
@@ -46,6 +46,7 @@ app.use((error, _req, res, _next) => {
 });
 
 async function bootstrap() {
+  assertProductionSecrets();
   await seedDatabase();
   await ensureInvoiceChunksIndexed();
 
