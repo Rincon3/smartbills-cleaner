@@ -1,0 +1,58 @@
+name: CD
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+concurrency:
+  group: cd-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  secrets-guard:
+    name: No secrets in git
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scan tracked files
+        run: bash deploy/check-no-secrets.sh
+
+  publish:
+    name: Publish to PLAN_A_EC2
+    needs: secrets-guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      AWS_REGION: us-east-2
+      EC2_INSTANCE_ID: ${{ secrets.EC2_INSTANCE_ID }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    steps:
+      - name: Skip without publish secrets
+        id: gate
+        run: |
+          if [ -z "${EC2_INSTANCE_ID}" ] || [ -z "${AWS_ACCESS_KEY_ID}" ] || [ -z "${AWS_SECRET_ACCESS_KEY}" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "SBC-75: no hay secretos de publicación en GitHub. El job termina en verde y no despliega."
+            exit 0
+          fi
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        if: steps.gate.outputs.ready == 'true'
+
+      - name: Deploy via SSM
+        if: steps.gate.outputs.ready == 'true'
+        run: |
+          aws ssm send-command \
+            --instance-ids "$EC2_INSTANCE_ID" \
+            --document-name AWS-RunShellScript \
+            --comment "smartbills TK-04b" \
+            --parameters 'commands=["bash /opt/smartbills/deploy/bootstrap-ec2.sh"]' \
+            --output text \
+            --query 'Command.CommandId'
