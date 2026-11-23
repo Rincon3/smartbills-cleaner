@@ -20,7 +20,9 @@ fi
 systemctl enable --now docker
 usermod -aG docker ec2-user || true
 
+export HOME=/root
 install -d -o ec2-user -g ec2-user /opt/smartbills
+git config --system --add safe.directory /opt/smartbills || true
 if [ ! -d /opt/smartbills/.git ]; then
   git clone --branch feature/sbc-75-publish --depth 1 \
     https://github.com/Rincon3/smartbills-cleaner.git /opt/smartbills

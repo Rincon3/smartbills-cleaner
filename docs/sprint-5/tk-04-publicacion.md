@@ -32,47 +32,26 @@ curl -k https://127.0.0.1:8443/api/health
 
 Puerto **8443** a propósito: no ocupa 80/443 ni el 8080 de pruebas. Certificado interno (`deploy/Caddyfile.local`). Let's Encrypt **no** se pide en localhost.
 
-## PLAN_A_EC2 — bloqueo de IAM (no hay URL pública todavía)
+## PLAN_A_EC2 — URL de pruebas (2026-11-23)
 
-El ADR `docs/adr/001-hosting-plan-a-b.md` sigue vigente: **t3.small** + Compose + volumen EBS + instance profile para Bedrock. Lightsail descartado. Educate/Vocareum **no** se usa como hosting.
+El ADR `docs/adr/001-hosting-plan-a-b.md` sigue vigente: **t3.small** + Compose + volumen EBS + instance profile. Lightsail descartado. Educate/Vocareum **no** se usó como hosting. JWT y Postgres se generaron **en la VM**; no hay keys de AWS en git ni en user-data.
 
-Prueba CLI del 2026-11-23 (usuario IAM de trabajo, `us-east-2`):
+**URL:** https://3-143-33-168.sslip.io  
+Certificado Let's Encrypt (CN del host sslip.io). SG solo **80/443**. Sin puerto 22. Instance profile `smartbills-ec2` (SSM + Bedrock + S3 read). IMDSv2 hop limit 2. Disco gp3 20 GiB.
 
-| Acción | Resultado |
+| Comprobación pública | Resultado |
 |---|---|
-| `sts:GetCallerIdentity` | OK |
-| `ec2:DescribeVpcs` / `DescribeSubnets` | OK |
-| `bedrock:ListFoundationModels` (Titan v2 + Nova Lite) | OK |
-| `s3:ListAllMyBuckets` | OK (vacío) |
-| `ec2:RunInstances` (t3.small, dry-run) | **Denied** |
-| `ec2:CreateSecurityGroup` | **Denied** |
-| `ec2:DescribeInstances` / `DescribeImages` | **Denied** |
-| `iam:CreateRole` / `ListInstanceProfiles` | **Denied** |
-| `lightsail:GetInstances` | **Denied** |
-| `sts:AssumeRole` sobre `AccountFullAccessRole` | no aplica: trust `account-access.amazonaws.com` |
+| `GET /api/health` | 200 |
+| HTML `/assets/index-*.js` (Vite build, no dev) | sí |
+| `GET /uploads/…` sin token | 404 |
+| Login `ADMIN` | 200 + JWT |
+| HTTP :80 | 308 → HTTPS |
 
-**Bloqueo:** este IAM user no puede crear la VM ni el instance profile. Por eso **no hay URL HTTPS pública** en este incremento. No se inventó una instancia ni se copiaron keys de Vocareum.
+Este entorno de **pruebas** arrancó con `ALLOW_SEED=true` para poder entrar (mismos usuarios que el seed local). **No es producción real:** rota esas contraseñas antes de una demo abierta. En un endurecimiento posterior deja `ALLOW_SEED=false`.
 
-Para desbloquear (quien administre la cuenta adjunta `deploy/iam/operator-ec2-policy.json` al usuario, o lanza la VM a mano):
+`miguelr33` aún **no** tiene `ssm:SendCommand` ni `ec2-instance-connect:SendSSHPublicKey`. El bootstrap se hizo con user-data. CD de GitHub sigue en skip-until-secrets.
 
-1. Rol `smartbills-ec2` con trust `deploy/iam/instance-trust.json`.
-2. Permisos Bedrock `deploy/iam/instance-bedrock-policy.json` + managed `AmazonSSMManagedInstanceCore`.
-3. Instance profile del mismo nombre. IMDSv2 `HttpTokens=required` y **`HttpPutResponseHopLimit=2`** (Compose en bridge).
-4. `t3.small` Amazon Linux 2023, disco EBS (no instance store), security group 80/443 (no 22 si hay SSM).
-5. User data `deploy/user-data.sh` — **sin secretos**.
-6. Crear `/opt/smartbills/.env` en la VM (fuera de git) a partir de `.env.production.example`:
-   - `JWT_SECRET` = `openssl rand -hex 48`
-   - `POSTGRES_PASSWORD` aleatorio
-   - `CORS_ORIGIN=https://<eip-con-guiones>.sslip.io`
-   - `PUBLIC_HOST` igual al host de CORS
-   - `BEDROCK_USE_INSTANCE_PROFILE=true`
-   - **no** `AWS_ACCESS_KEY_ID` (el SDK usa el rol)
-   - `ALLOW_SEED=false`
-7. `bash /opt/smartbills/deploy/bootstrap-ec2.sh`
-
-Let's Encrypt exige un **nombre DNS**. Sin dominio propio se usa `sslip.io` sobre la Elastic IP. Si Educate bloquea el puerto 80, LE falla: dejar constancia y seguir con TLS interno o un dominio.
-
-GitHub Actions (`.github/workflows/cd.yml`) **no despliega** si faltan `EC2_INSTANCE_ID` / `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`. El workflow queda verde a propósito. No guardar JWT ni keys de Bedrock en GitHub.
+Para apagar costos: `aws ec2 stop-instances --region us-east-2 --instance-ids` de la VM `smartbills-prod`. No hacer `terminate` si quieres conservar Postgres/uploads. La Elastic IP sigue cobrando si queda huérfana: asociarla o liberarla.
 
 ## Persistencia
 
@@ -90,9 +69,9 @@ No usar `docker compose down -v` en el proyecto `smartbills-prod`. El compose de
 - Plan B (Render): clave **persistente** en el panel, nunca en git. Si no hay, mismo modo degradado.
 - No reutilizar keys de sesión de Educate/Vocareum.
 
-## PLAN_B_RENDER (solo si A sigue bloqueada)
+## PLAN_B_RENDER
 
-Render da HTTPS de fábrica. Hace falta un disco persistente de pago para Postgres y `uploads`. El frontend de Vite build + `/api` proxy es el mismo `Dockerfile.prod`. No se creó servicio Render en esta historia (no hay credenciales de Render en el entorno).
+No se usó: Plan A ya tiene URL HTTPS. Queda como respaldo si Educate recorta EC2.
 
 ## Criterio de error de la historia
 
