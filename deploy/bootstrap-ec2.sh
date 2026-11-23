@@ -15,8 +15,8 @@ if grep -qE '^JWT_SECRET=(change-me)?[[:space:]]*$' .env; then
 fi
 
 git fetch origin
-git checkout "${SMARTBILLS_REF:-main}"
-git pull --ff-only origin "${SMARTBILLS_REF:-main}" || true
+git checkout "${SMARTBILLS_REF:-feature/sbc-75-publish}"
+git pull --ff-only origin "${SMARTBILLS_REF:-feature/sbc-75-publish}" || true
 
 export CADDYFILE=./deploy/Caddyfile
 export CADDY_HTTP_PORT=80

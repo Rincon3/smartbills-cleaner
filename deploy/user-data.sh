@@ -1,19 +1,28 @@
 #!/bin/bash
 # cloud-init. NO poner JWT, POSTGRES_PASSWORD ni keys de AWS aquí.
 set -euxo pipefail
-dnf update -y
+
+if [ ! -f /swapfile ]; then
+  fallocate -l 2G /swapfile || dd if=/dev/zero of=/swapfile bs=1M count=2048
+  chmod 600 /swapfile
+  mkswap /swapfile
+  echo '/swapfile none swap sw 0 0' >> /etc/fstab
+fi
+swapon /swapfile || true
+
 dnf install -y docker git
+if ! dnf install -y docker-compose-plugin; then
+  mkdir -p /usr/libexec/docker/cli-plugins
+  curl -fsSL "https://github.com/docker/compose/releases/download/v2.32.4/docker-compose-linux-x86_64" \
+    -o /usr/libexec/docker/cli-plugins/docker-compose
+  chmod +x /usr/libexec/docker/cli-plugins/docker-compose
+fi
 systemctl enable --now docker
 usermod -aG docker ec2-user || true
 
 install -d -o ec2-user -g ec2-user /opt/smartbills
 if [ ! -d /opt/smartbills/.git ]; then
-  git clone https://github.com/Rincon3/smartbills-cleaner.git /opt/smartbills
+  git clone --branch feature/sbc-75-publish --depth 1 \
+    https://github.com/Rincon3/smartbills-cleaner.git /opt/smartbills
+  chown -R ec2-user:ec2-user /opt/smartbills
 fi
-
-cat >/usr/local/bin/smartbills-wait-env <<'EOF'
-#!/bin/bash
-echo "Crea /opt/smartbills/.env (desde .env.production.example) y luego:"
-echo "  cd /opt/smartbills && docker compose -p smartbills-prod -f docker-compose.prod.yml -f docker-compose.https.yml up -d --build"
-EOF
-chmod +x /usr/local/bin/smartbills-wait-env
