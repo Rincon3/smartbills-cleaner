@@ -3,19 +3,22 @@ import assert from "node:assert/strict";
 import {
   azureDocumentIntelligenceConfigured,
   cloudOcrOrder,
+  docIntelConfigured,
   documentAiConfigured,
   pagesFromAzure,
+  pagesFromDocIntel,
   pagesFromDocumentAi,
   pagesFromTextract,
   textractConfigured,
   tryCloudOcr
 } from "./cloudOcr.js";
 
-test("sin claves no activa Azure, Document AI ni Textract", () => {
+test("sin claves no activa DocIntel, Azure, Document AI ni Textract", () => {
+  assert.equal(docIntelConfigured(), false);
   assert.equal(azureDocumentIntelligenceConfigured(), false);
   assert.equal(documentAiConfigured(), false);
   assert.equal(textractConfigured(), false);
-  assert.deepEqual(cloudOcrOrder(), ["azure", "documentai", "textract"]);
+  assert.deepEqual(cloudOcrOrder(), ["docintel", "azure", "documentai", "textract"]);
 });
 
 test("tryCloudOcr no lanza y sigue el flujo si no hay APIs", async () => {
@@ -76,4 +79,17 @@ test("Azure sin páginas usa el content plano", () => {
   });
   assert.equal(pages.length, 1);
   assert.match(pages[0].text, /249.900/);
+});
+
+test("arma páginas desde Info Inlet / Knowlez invoice extract", () => {
+  const pages = pagesFromDocIntel({
+    vendor_name: "Enel Colombia",
+    tax_id: { value: "860063875-6", confidence: 0.99 },
+    total: "380.800",
+    pages: [{ page: 1, text: "Servicio de energia electrica" }]
+  });
+  assert.equal(pages[0].engine, "docintel-suite");
+  assert.match(pages[0].text, /NIT: 860063875-6/);
+  assert.match(pages[0].text, /Total: 380.800/);
+  assert.match(pages[0].text, /energia electrica/);
 });

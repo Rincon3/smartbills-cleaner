@@ -42,12 +42,58 @@ function azureModel() {
   return String(process.env.AZURE_DOCUMENT_INTELLIGENCE_MODEL || "prebuilt-invoice").trim();
 }
 
+const DOCINTEL_DEFAULT_BASE = "https://api-doc-intel-suite.knowlez.com";
+const DOCINTEL_MAX_BYTES = 8 * 1024 * 1024;
+const DOCINTEL_FIELD_LABELS = {
+  vendor: "Proveedor",
+  vendor_name: "Proveedor",
+  vendorName: "Proveedor",
+  supplier: "Proveedor",
+  company: "Proveedor",
+  tax_id: "NIT",
+  taxId: "NIT",
+  vat_id: "NIT",
+  vendor_tax_id: "NIT",
+  nit: "NIT",
+  invoice_number: "Factura",
+  invoiceNumber: "Factura",
+  invoice_id: "Factura",
+  invoice_no: "Factura",
+  invoice_date: "Fecha",
+  invoiceDate: "Fecha",
+  issue_date: "Fecha",
+  date: "Fecha",
+  due_date: "Fecha de vencimiento",
+  dueDate: "Fecha de vencimiento",
+  subtotal: "Subtotal",
+  tax: "IVA",
+  vat: "IVA",
+  tax_amount: "IVA",
+  total: "Total",
+  grand_total: "Total",
+  invoice_total: "Total",
+  amount_due: "Total",
+  total_amount: "Total"
+};
+
+export function docIntelConfigured() {
+  return Boolean(docIntelKey());
+}
+
+function docIntelKey() {
+  return String(process.env.DOCINTEL_API_KEY || process.env.KNOWLEZ_API_KEY || "").trim();
+}
+
+function docIntelBaseUrl() {
+  return String(process.env.DOCINTEL_BASE_URL || DOCINTEL_DEFAULT_BASE).replace(/\/+$/, "");
+}
+
 export function cloudOcrOrder() {
-  const raw = String(process.env.OCR_CLOUD_ORDER || "azure,documentai,textract")
+  const raw = String(process.env.OCR_CLOUD_ORDER || "docintel,azure,documentai,textract")
     .split(",")
     .map((item) => item.trim().toLowerCase())
     .filter(Boolean);
-  return raw.length ? raw : ["azure", "documentai", "textract"];
+  return raw.length ? raw : ["docintel", "azure", "documentai", "textract"];
 }
 
 function textFromAnchor(fullText, anchor) {
@@ -184,6 +230,104 @@ export function pagesFromAzure(payload) {
         section: "Página 1",
         text: structured.join("\n"),
         engine: "azure-document-intelligence"
+      }
+    ];
+  }
+
+  if (structured.length && fromPages[0]) {
+    fromPages[0] = {
+      ...fromPages[0],
+      text: `${structured.join("\n")}\n${fromPages[0].text}`.trim()
+    };
+  }
+
+  return fromPages;
+}
+
+function unwrapDocIntelValue(value) {
+  if (value == null || value === "") {
+    return "";
+  }
+  if (typeof value === "string" || typeof value === "number") {
+    return String(value).trim();
+  }
+  if (Array.isArray(value)) {
+    return value.map(unwrapDocIntelValue).filter(Boolean).join(" | ");
+  }
+  if (typeof value === "object") {
+    return unwrapDocIntelValue(
+      value.value ?? value.content ?? value.text ?? value.amount ?? value.total ?? ""
+    );
+  }
+  return "";
+}
+
+function docIntelDocument(payload) {
+  if (!payload || typeof payload !== "object") {
+    return {};
+  }
+  if (payload.data && typeof payload.data === "object") {
+    return Array.isArray(payload.data) ? payload.data[0] || {} : payload.data;
+  }
+  if (payload.result && typeof payload.result === "object") {
+    return payload.result;
+  }
+  if (payload.invoice && typeof payload.invoice === "object") {
+    return { ...payload, ...payload.invoice };
+  }
+  return payload;
+}
+
+export function pagesFromDocIntel(payload) {
+  const doc = docIntelDocument(payload);
+  const fields = doc.fields && typeof doc.fields === "object" ? doc.fields : {};
+  const structured = [];
+
+  for (const [key, label] of Object.entries(DOCINTEL_FIELD_LABELS)) {
+    const text = unwrapDocIntelValue(doc[key] ?? fields[key]);
+    if (text && !structured.some((line) => line.startsWith(`${label}:`))) {
+      structured.push(`${label}: ${text}`);
+    }
+  }
+
+  const pageItems = Array.isArray(doc.pages)
+    ? doc.pages
+    : Array.isArray(payload?.pages)
+      ? payload.pages
+      : [];
+  const fromPages = pageItems
+    .map((page, index) => {
+      const text = unwrapDocIntelValue(page?.text ?? page?.content ?? page);
+      return {
+        page: Number(page?.page || page?.pageNumber || index + 1),
+        section: `Página ${page?.page || page?.pageNumber || index + 1}`,
+        text,
+        engine: "docintel-suite"
+      };
+    })
+    .filter((page) => page.text);
+
+  const blob = [doc.text, doc.ocr_text, doc.raw_text, doc.content, payload?.text]
+    .map(unwrapDocIntelValue)
+    .filter(Boolean)
+    .join("\n");
+
+  if (!fromPages.length && blob) {
+    fromPages.push({
+      page: 1,
+      section: "Página 1",
+      text: blob,
+      engine: "docintel-suite"
+    });
+  }
+
+  if (!fromPages.length && structured.length) {
+    return [
+      {
+        page: 1,
+        section: "Página 1",
+        text: structured.join("\n"),
+        engine: "docintel-suite"
       }
     ];
   }
@@ -416,7 +560,65 @@ async function extractWithAzure(filePath, mimeType) {
   return null;
 }
 
+function docIntelHeaders() {
+  const headers = {
+    "x-api-key": docIntelKey(),
+    "Content-Type": "application/json"
+  };
+  const subscription = String(process.env.DOCINTEL_SUBSCRIPTION_ID || "").trim();
+  if (subscription) {
+    headers["x-marketplace-subscription-id"] = subscription;
+  }
+  return headers;
+}
+
+async function extractWithDocIntel(filePath, mimeType) {
+  if (!docIntelConfigured()) {
+    return null;
+  }
+
+  const bytes = await readFile(filePath);
+  if (bytes.length > DOCINTEL_MAX_BYTES) {
+    return null;
+  }
+
+  const isPdf = (mimeType || "").includes("pdf") || String(filePath).toLowerCase().endsWith(".pdf");
+  const url = isPdf
+    ? `${docIntelBaseUrl()}/v1/invoice/extract`
+    : `${docIntelBaseUrl()}/v1/document/extract-generic`;
+  const body = isPdf
+    ? { pdf_base64: bytes.toString("base64") }
+    : {
+        file_base64: bytes.toString("base64"),
+        filename: String(filePath).split("/").pop() || "invoice.png"
+      };
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: docIntelHeaders(),
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(CLOUD_TIMEOUT_MS)
+  });
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const pages = pagesFromDocIntel(await response.json());
+  if (!pages.length) {
+    return null;
+  }
+
+  return {
+    engine: "docintel-suite",
+    pageCount: pages.length,
+    pages,
+    mimeType
+  };
+}
+
 const cloudExtractors = {
+  docintel: extractWithDocIntel,
   azure: extractWithAzure,
   documentai: extractWithDocumentAi,
   textract: extractWithTextract
