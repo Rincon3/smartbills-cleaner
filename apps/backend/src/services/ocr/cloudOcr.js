@@ -3,6 +3,9 @@ import { readFile } from "fs/promises";
 
 const CLOUD_TIMEOUT_MS = 20000;
 const TEXTRACT_SYNC_MAX_BYTES = 5 * 1024 * 1024;
+const AZURE_MAX_BYTES = 4 * 1024 * 1024;
+const AZURE_API_VERSION = "2024-11-30";
+const AZURE_LEGACY_API_VERSION = "2023-07-31";
 
 export function documentAiConfigured() {
   return Boolean(
@@ -17,12 +20,34 @@ export function textractConfigured() {
   return Boolean(process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY);
 }
 
+export function azureDocumentIntelligenceConfigured() {
+  return Boolean(azureEndpoint() && azureKey());
+}
+
+function azureEndpoint() {
+  return String(
+    process.env.AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT ||
+      process.env.AZURE_FORM_RECOGNIZER_ENDPOINT ||
+      ""
+  ).replace(/\/+$/, "");
+}
+
+function azureKey() {
+  return String(
+    process.env.AZURE_DOCUMENT_INTELLIGENCE_KEY || process.env.AZURE_FORM_RECOGNIZER_KEY || ""
+  ).trim();
+}
+
+function azureModel() {
+  return String(process.env.AZURE_DOCUMENT_INTELLIGENCE_MODEL || "prebuilt-invoice").trim();
+}
+
 export function cloudOcrOrder() {
-  const raw = String(process.env.OCR_CLOUD_ORDER || "documentai,textract")
+  const raw = String(process.env.OCR_CLOUD_ORDER || "azure,documentai,textract")
     .split(",")
     .map((item) => item.trim().toLowerCase())
     .filter(Boolean);
-  return raw.length ? raw : ["documentai", "textract"];
+  return raw.length ? raw : ["azure", "documentai", "textract"];
 }
 
 function textFromAnchor(fullText, anchor) {
@@ -87,6 +112,90 @@ export function pagesFromTextract(payload) {
   }
   flush();
   return pages;
+}
+
+function azureFieldText(field) {
+  if (!field) {
+    return "";
+  }
+  if (field.content) {
+    return String(field.content).trim();
+  }
+  if (field.valueString) {
+    return String(field.valueString).trim();
+  }
+  if (field.valueDate) {
+    return String(field.valueDate).trim();
+  }
+  if (field.valueCurrency?.amount != null) {
+    return String(field.valueCurrency.amount);
+  }
+  if (field.valueNumber != null) {
+    return String(field.valueNumber);
+  }
+  return "";
+}
+
+function azureStructuredLines(analyzeResult) {
+  const fields = analyzeResult?.documents?.[0]?.fields || {};
+  const rows = [
+    ["Proveedor", azureFieldText(fields.VendorName)],
+    ["NIT", azureFieldText(fields.VendorTaxId)],
+    ["Factura", azureFieldText(fields.InvoiceId)],
+    ["Fecha", azureFieldText(fields.InvoiceDate)],
+    ["Fecha de vencimiento", azureFieldText(fields.DueDate)],
+    ["Subtotal", azureFieldText(fields.SubTotal)],
+    ["IVA", azureFieldText(fields.TotalTax)],
+    ["Total", azureFieldText(fields.InvoiceTotal) || azureFieldText(fields.AmountDue)]
+  ];
+  return rows.filter(([, value]) => value).map(([label, value]) => `${label}: ${value}`);
+}
+
+export function pagesFromAzure(payload) {
+  const analyzeResult = payload?.analyzeResult || payload || {};
+  const structured = azureStructuredLines(analyzeResult);
+  const pages = Array.isArray(analyzeResult.pages) ? analyzeResult.pages : [];
+
+  const fromPages = pages
+    .map((page) => {
+      const lines = (page.lines || []).map((line) => line.content || line.text).filter(Boolean);
+      return {
+        page: Number(page.pageNumber || page.page || 1),
+        section: `Página ${page.pageNumber || page.page || 1}`,
+        text: lines.join("\n").trim(),
+        engine: "azure-document-intelligence"
+      };
+    })
+    .filter((page) => page.text);
+
+  if (!fromPages.length && analyzeResult.content) {
+    fromPages.push({
+      page: 1,
+      section: "Página 1",
+      text: String(analyzeResult.content).trim(),
+      engine: "azure-document-intelligence"
+    });
+  }
+
+  if (!fromPages.length && structured.length) {
+    return [
+      {
+        page: 1,
+        section: "Página 1",
+        text: structured.join("\n"),
+        engine: "azure-document-intelligence"
+      }
+    ];
+  }
+
+  if (structured.length && fromPages[0]) {
+    fromPages[0] = {
+      ...fromPages[0],
+      text: `${structured.join("\n")}\n${fromPages[0].text}`.trim()
+    };
+  }
+
+  return fromPages;
 }
 
 async function loadGoogleCredentials() {
@@ -218,7 +327,97 @@ async function extractWithTextract(filePath, mimeType) {
   return { engine: "textract", pageCount: pages.length, pages, mimeType };
 }
 
+function azureAnalyzeUrls(model) {
+  const endpoint = azureEndpoint();
+  return [
+    `${endpoint}/documentintelligence/documentModels/${model}:analyze?api-version=${AZURE_API_VERSION}&locale=es`,
+    `${endpoint}/formrecognizer/documentModels/${model}:analyze?api-version=${AZURE_LEGACY_API_VERSION}`
+  ];
+}
+
+async function pollAzureOperation(operationUrl, key, startedAt) {
+  while (Date.now() - startedAt < CLOUD_TIMEOUT_MS) {
+    const remaining = CLOUD_TIMEOUT_MS - (Date.now() - startedAt);
+    const response = await fetch(operationUrl, {
+      headers: { "Ocp-Apim-Subscription-Key": key },
+      signal: AbortSignal.timeout(Math.max(1000, remaining))
+    });
+    if (!response.ok) {
+      return null;
+    }
+
+    const body = await response.json();
+    if (body.status === "succeeded") {
+      return body;
+    }
+    if (body.status === "failed") {
+      return null;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 400));
+  }
+
+  return null;
+}
+
+async function extractWithAzure(filePath, mimeType) {
+  if (!azureDocumentIntelligenceConfigured()) {
+    return null;
+  }
+
+  const bytes = await readFile(filePath);
+  if (bytes.length > AZURE_MAX_BYTES) {
+    return null;
+  }
+
+  const key = azureKey();
+  const startedAt = Date.now();
+  const payload = JSON.stringify({
+    base64Source: bytes.toString("base64")
+  });
+
+  for (const url of azureAnalyzeUrls(azureModel())) {
+    const remaining = CLOUD_TIMEOUT_MS - (Date.now() - startedAt);
+    if (remaining < 1000) {
+      return null;
+    }
+
+    const started = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Ocp-Apim-Subscription-Key": key,
+        "Content-Type": "application/json"
+      },
+      body: payload,
+      signal: AbortSignal.timeout(remaining)
+    });
+
+    if (started.status !== 202) {
+      continue;
+    }
+
+    const operationUrl = started.headers.get("operation-location");
+    if (!operationUrl) {
+      continue;
+    }
+
+    const result = await pollAzureOperation(operationUrl, key, startedAt);
+    const pages = pagesFromAzure(result);
+    if (pages.length) {
+      return {
+        engine: "azure-document-intelligence",
+        pageCount: pages.length,
+        pages,
+        mimeType
+      };
+    }
+  }
+
+  return null;
+}
+
 const cloudExtractors = {
+  azure: extractWithAzure,
   documentai: extractWithDocumentAi,
   textract: extractWithTextract
 };

@@ -11,5 +11,5 @@ export const env = {
   bedrockAdjustedModel: process.env.BEDROCK_ADJUSTED_MODEL || "amazon.nova-lite-v1:0",
   ragTopK: Number(process.env.RAG_TOP_K || 3),
   minRetrievalScore: Number(process.env.MIN_RETRIEVAL_SCORE || 0.32),
-  ocrCloudOrder: process.env.OCR_CLOUD_ORDER || "documentai,textract"
+  ocrCloudOrder: process.env.OCR_CLOUD_ORDER || "azure,documentai,textract"
 };
