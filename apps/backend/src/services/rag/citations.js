@@ -22,23 +22,37 @@ export function citationKey(code, page) {
 }
 
 export function extractEvidenceLine(question, chunk) {
-  const terms = tokenize(question);
+  const terms = tokenize(question, { dropStopwords: true });
+  const wantsFact = /cuanto|total|nit|pague|fecha/.test(
+    String(question || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+  );
   const lines = String(chunk.text || "")
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean);
 
-  const matched = lines.find((line) =>
-    terms.some((term) =>
-      line
+  const scored = lines
+    .map((line) => {
+      const normalized = line
         .toLowerCase()
         .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .includes(term)
-    )
-  );
+        .replace(/[\u0300-\u036f]/g, "");
+      const termHits = terms.filter((term) => normalized.includes(term)).length;
+      const hasNumber = /\d/.test(line);
+      return {
+        line,
+        score: termHits + (wantsFact && hasNumber ? 2 : 0)
+      };
+    })
+    .sort(
+      (left, right) =>
+        right.score - left.score || Number(/\d/.test(right.line)) - Number(/\d/.test(left.line))
+    );
 
-  return matched || lines[0] || "";
+  return scored[0]?.line || lines[0] || "";
 }
 
 export function generateGroundedAnswer(question, hits, { maxSentences = 2 } = {}) {

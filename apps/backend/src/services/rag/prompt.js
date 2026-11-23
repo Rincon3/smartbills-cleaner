@@ -20,7 +20,7 @@ export const FEW_SHOT_EXAMPLES = [
 
 export const RAG_SYSTEM_INSTRUCTIONS = `Eres el asistente RAG de SmartBills Cleaner.
 Responde siempre en español, en máximo dos frases, con tono claro y verificable.
-Usa únicamente los fragmentos recuperados. Cada dato numérico o de proveedor debe llevar una cita en el formato exacto [Factura CODIGO, pág. N].
+Usa únicamente los fragmentos recuperados. Si la pregunta pide un monto, NIT o fecha, responde ese dato (no el título del servicio) y cita la página donde aparece, en el formato exacto [Factura CODIGO, pág. N].
 No inventes facturas, NITs, montos ni páginas. Si la evidencia no alcanza, dilo sin citar documentos irrelevantes.`;
 
 export function formatRetrievedSources(hits) {

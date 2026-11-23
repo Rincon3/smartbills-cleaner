@@ -1,0 +1,101 @@
+{
+  "average": {
+    "faithfulness": 1,
+    "context_precision": 0.8,
+    "context_recall": 0.95,
+    "answer_relevancy": 0.299,
+    "ragas": 0.7622
+  },
+  "cases": [
+    {
+      "id": "enel-energia",
+      "question": "Cuanto pague de energia electrica con Enel?",
+      "answer": "Nic 1234567 [Factura DEMO-VEC-05, pág. 1] Total energia 380.800 [Factura DEMO-VEC-05, pág. 2]",
+      "topK": 3,
+      "consensus": {
+        "role": "adjusted",
+        "provider": "local",
+        "model": "grounded-top3",
+        "score": 0.7496
+      },
+      "faithfulness": 1,
+      "context_precision": 1,
+      "context_recall": 1,
+      "answer_relevancy": 0.1652,
+      "answer_correctness": 0.875,
+      "ragas": 0.7913
+    },
+    {
+      "id": "aguas-nit",
+      "question": "Cual es el NIT de Aguas de la Sabana?",
+      "answer": "NIT: 823.004.006-8 [Factura DEMO-VEC-01, pág. 1] AGUAS DE LA SABANA S.A. ESP. ODIGO 070-001-0015463 [Factura S-FS13928501, pág. 1]",
+      "topK": 3,
+      "consensus": {
+        "role": "adjusted",
+        "provider": "local",
+        "model": "grounded-top3",
+        "score": 0.8404
+      },
+      "faithfulness": 1,
+      "context_precision": 1,
+      "context_recall": 0.75,
+      "answer_relevancy": 0.468,
+      "answer_correctness": 1,
+      "ragas": 0.8045
+    },
+    {
+      "id": "papeleria",
+      "question": "Hay alguna factura de papeleria o utiles de oficina?",
+      "answer": "Pedido de utiles de oficina [Factura DEMO-VEC-03, pág. 1]",
+      "topK": 3,
+      "consensus": {
+        "role": "base",
+        "provider": "local",
+        "model": "grounded-top1",
+        "score": 0.8313
+      },
+      "faithfulness": 1,
+      "context_precision": 1,
+      "context_recall": 1,
+      "answer_relevancy": 0.4376,
+      "answer_correctness": 0.5455,
+      "ragas": 0.8594
+    },
+    {
+      "id": "claro-plan",
+      "question": "Cuanto cuesta el plan de telefonia de Claro?",
+      "answer": "Plan empresas 200 GB [Factura DEMO-VEC-02, pág. 1] Cargo plan 89.000 [Factura DEMO-VEC-02, pág. 2]",
+      "topK": 3,
+      "consensus": {
+        "role": "adjusted",
+        "provider": "local",
+        "model": "grounded-top3",
+        "score": 0.7761
+      },
+      "faithfulness": 1,
+      "context_precision": 1,
+      "context_recall": 1,
+      "answer_relevancy": 0.2537,
+      "answer_correctness": 0.625,
+      "ragas": 0.8134
+    },
+    {
+      "id": "sin-evidencia",
+      "question": "Cual es el canon de arriendo de un local en Madrid?",
+      "answer": "No encontré evidencia verificable en las facturas indexadas para responder esa pregunta.",
+      "topK": 3,
+      "consensus": {
+        "role": "base",
+        "provider": "local",
+        "model": "grounded-top1",
+        "score": 0.7512
+      },
+      "faithfulness": 1,
+      "context_precision": 0,
+      "context_recall": 1,
+      "answer_relevancy": 0.1706,
+      "answer_correctness": 1,
+      "ragas": 0.5426
+    }
+  ]
+}
