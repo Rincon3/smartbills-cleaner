@@ -14,6 +14,7 @@ queryRouter.post("/", async (req, res) => {
   const result = await queryInvoices({
     question,
     invoiceId,
+    user: req.user,
     filters: {
       supplier: req.body?.supplier,
       status: req.body?.status,
@@ -33,7 +34,7 @@ queryRouter.get("/source", async (req, res) => {
     return res.status(400).json({ message: "Indica chunkId o factura_id + pagina" });
   }
 
-  const source = await getChunkSource({ chunkId, invoiceId, invoiceCode, page });
+  const source = await getChunkSource({ chunkId, invoiceId, invoiceCode, page, user: req.user });
 
   if (!source) {
     return res.status(404).json({ message: "Fragmento no encontrado en el documento fuente" });

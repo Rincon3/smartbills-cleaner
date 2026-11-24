@@ -9,7 +9,7 @@ test("el prompt RAG incluye citación, español y few-shot", () => {
     sources: "- chunk_source=a:1 | cita=[Factura DEMO-VEC-05, pág. 1]\n  fragmento: Total energia 380.800"
   });
 
-  assert.equal(RAG_TOP_K, 5);
+  assert.equal(RAG_TOP_K, 3);
   assert.equal(FEW_SHOT_EXAMPLES.length, 3);
   assert.match(prompt, /español/i);
   assert.match(prompt, /\[Factura CODIGO, pág\. N\]/);

@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SmartBills Cleaner · Métricas de rendimiento y pruebas</title>
+<style>
+  :root { --ink:#16322f; --muted:#56706c; --line:#d5e2df; --primary:#0f8b7d; --bg:#f4f7f5; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:"Segoe UI","Helvetica Neue",Arial,sans-serif; color:var(--ink); background:var(--bg); line-height:1.55; }
+  .shell { width:min(1040px,calc(100% - 32px)); margin:0 auto; padding:32px 0 64px; }
+  h1 { margin:0 0 6px; font-size:2rem; }
+  h2 { margin:34px 0 12px; font-size:1.3rem; border-bottom:2px solid var(--primary); padding-bottom:6px; }
+  p, li { color:var(--muted); }
+  .card { background:#fff; border:1px solid var(--line); border-radius:16px; padding:20px 24px; margin-bottom:16px; }
+  .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; margin:16px 0; }
+  .kpi { background:#fff; border:1px solid var(--line); border-radius:14px; padding:14px 16px; }
+  .kpi strong { display:block; font-size:1.55rem; color:var(--primary); }
+  .kpi span { font-size:.82rem; color:var(--muted); }
+  table { width:100%; border-collapse:collapse; background:#fff; font-size:.88rem; }
+  th, td { border:1px solid var(--line); padding:7px 10px; text-align:left; vertical-align:middle; }
+  th { background:#16322f; color:#fff; }
+  .badge { display:inline-block; padding:2px 9px; border-radius:999px; font-size:.74rem; font-weight:700; }
+  .badge.ok { background:#dff5e6; color:#176b35; }
+  .badge.bad { background:#fde2e2; color:#a12727; }
+  .bar { height:6px; background:#e6efed; border-radius:99px; margin-top:4px; }
+  .bar span { display:block; height:100%; background:var(--primary); border-radius:99px; }
+  code { background:#eef6f4; padding:1px 5px; border-radius:6px; font-size:.85em; }
+  pre { background:#16322f; color:#e8f8f4; padding:12px 14px; border-radius:12px; overflow-x:auto; font-size:.82rem; }
+  .warn { border-left:4px solid #d98e04; background:#fff8e8; }
+  .meta { font-size:.88rem; color:var(--muted); }
+  @media print { body { background:#fff; } .card, .kpi { break-inside:avoid; } }
+</style>
+</head>
+<body>
+<main class="shell">
+  <section class="card">
+    <h1>Métricas de rendimiento y pruebas</h1>
+    <p class="meta">SmartBills Cleaner · estado al 15/10/2026, 1:03:28 p. m. ·
+    Node v23.7.0 · darwin/arm64 · API en Docker (http://localhost:4000/api)</p>
+    <div class="kpis">
+      <div class="kpi"><strong>24/24</strong><span>pruebas unitarias PASS (672 ms)</span></div>
+      <div class="kpi"><strong>11/11</strong><span>endpoints con p95 &lt; 4 s</span></div>
+      <div class="kpi"><strong>91,9 ms</strong><span>peor p95 medido (login con bcrypt)</span></div>
+      <div class="kpi"><strong>0</strong><span>errores en toda la corrida</span></div>
+      <div class="kpi"><strong>0.6883</strong><span>RAGAS promedio (5 casos)</span></div>
+      <div class="kpi"><strong>363/s</strong><span>búsquedas semánticas con 10 en paralelo</span></div>
+    </div>
+  </section>
+
+  <h2>1. Latencia de la API (20 iteraciones, tras calentamiento)</h2>
+  <p>Objetivo del sprint: búsqueda y consultas &lt; 4 s (SBC-25 / SBC-17).</p>
+  <table>
+    <thead><tr><th>Grupo</th><th>Endpoint</th><th>n</th><th>p50</th><th>p95</th><th>Máx</th><th>Err</th><th>SLA</th></tr></thead>
+    <tbody><tr>
+      <td>Auth</td>
+      <td>POST /auth/login</td>
+      <td>20</td>
+      <td>65,6 ms</td>
+      <td>91,9 ms<div class="bar"><span style="width:100.0%"></span></div></td>
+      <td>171,1 ms</td>
+      <td>0</td>
+      <td><span class="badge ok">&lt; 4 s</span></td>
+    </tr><tr>
+      <td>Facturas</td>
+      <td>GET /invoices (listado)</td>
+      <td>20</td>
+      <td>4 ms</td>
+      <td>5 ms<div class="bar"><span style="width:5.4%"></span></div></td>
+      <td>5,6 ms</td>
+      <td>0</td>
+      <td><span class="badge ok">&lt; 4 s</span></td>
+    </tr><tr>
+      <td>Facturas</td>
+      <td>GET /dashboard/summary</td>
+      <td>20</td>
+      <td>3,2 ms</td>
+      <td>4,3 ms<div class="bar"><span style="width:4.7%"></span></div></td>
+      <td>12 ms</td>
+      <td>0</td>
+      <td><span class="badge ok">&lt; 4 s</span></td>
+    </tr><tr>
+      <td>Búsqueda</td>
+      <td>GET /invoices/search (solo filtros SQL)</td>
+      <td>20</td>
+      <td>2,3 ms</td>
+      <td>3,6 ms<div class="bar"><span style="width:3.9%"></span></div></td>
+      <td>4,1 ms</td>
+      <td>0</td>
+      <td><span class="badge ok">&lt; 4 s</span></td>
+    </tr><tr>
+      <td>Búsqueda</td>
+      <td>GET /invoices/search (texto + pgvector)</td>
+      <td>20</td>
+      <td>4,5 ms</td>
+      <td>5,1 ms<div class="bar"><span style="width:5.5%"></span></div></td>
+      <td>5,2 ms</td>
+      <td>0</td>
+      <td><span class="badge ok">&lt; 4 s</span></td>
+    </tr><tr>
+      <td>Búsqueda</td>
+      <td>GET /invoices/search (híbrida: filtros + texto)</td>
+      <td>20</td>
+      <td>4 ms</td>
+      <td>5,2 ms<div class="bar"><span style="width:5.7%"></span></div></td>
+      <td>11,2 ms</td>
+      <td>0</td>
+      <td><span class="badge ok">&lt; 4 s</span></td>
+    </tr><tr>
+      <td>RAG</td>
+      <td>RAG: Cuanto pague de energia electrica con …</td>
+      <td>10</td>
+      <td>4,1 ms</td>
+      <td>5,1 ms<div class="bar"><span style="width:5.5%"></span></div></td>
+      <td>5,1 ms</td>
+      <td>0</td>
+      <td><span class="badge ok">&lt; 4 s</span></td>
+    </tr><tr>
+      <td>RAG</td>
+      <td>RAG: Cual es el NIT de Aguas de la Sabana?…</td>
+      <td>10</td>
+      <td>3,7 ms</td>
+      <td>4,2 ms<div class="bar"><span style="width:4.6%"></span></div></td>
+      <td>4,2 ms</td>
+      <td>0</td>
+      <td><span class="badge ok">&lt; 4 s</span></td>
+    </tr><tr>
+      <td>RAG</td>
+      <td>RAG: Hay alguna factura de papeleria o util…</td>
+      <td>10</td>
+      <td>4 ms</td>
+      <td>5,9 ms<div class="bar"><span style="width:6.4%"></span></div></td>
+      <td>5,9 ms</td>
+      <td>0</td>
+      <td><span class="badge ok">&lt; 4 s</span></td>
+    </tr><tr>
+      <td>RAG</td>
+      <td>RAG: Cuanto cuesta el plan de telefonia de …</td>
+      <td>10</td>
+      <td>3,7 ms</td>
+      <td>4,3 ms<div class="bar"><span style="width:4.7%"></span></div></td>
+      <td>4,3 ms</td>
+      <td>0</td>
+      <td><span class="badge ok">&lt; 4 s</span></td>
+    </tr><tr>
+      <td>RAG</td>
+      <td>RAG: Cual es el canon de arriendo de un loc…</td>
+      <td>10</td>
+      <td>3,2 ms</td>
+      <td>4,8 ms<div class="bar"><span style="width:5.2%"></span></div></td>
+      <td>4,8 ms</td>
+      <td>0</td>
+      <td><span class="badge ok">&lt; 4 s</span></td>
+    </tr></tbody>
+  </table>
+
+  <h2>2. Concurrencia y carga de documentos</h2>
+  <table>
+    <thead><tr><th>Escenario</th><th>Resultado</th><th>Detalle</th></tr></thead>
+    <tbody>
+      <tr><td>10 búsquedas pgvector simultáneas</td><td>27,5 ms en total</td>
+        <td>363 req/s · p95 24,6 ms · errores 0</td></tr>
+      <tr><td>Subida PDF con texto nativo (pdftotext/pdf.js)</td><td>p50 25 ms</td>
+        <td>máx 40,5 ms · Editorial Andes SAS · NIT 900.123.456-7 · 7 campos</td></tr>
+      <tr><td>Subida imagen PNG (Tesseract spa+eng, 42 KB)</td><td>p50 324,4 ms</td>
+        <td>máx 336,6 ms · Editorial Andes SAS · NIT 900.123.456-7 · 7 campos</td></tr>
+    </tbody>
+  </table>
+  <p class="meta">Las facturas subidas para medir se eliminaron al terminar (la BD queda con 14 facturas / 26 chunks).</p>
+
+  <h2>3. Búsqueda vectorial a escala (pgvector HNSW)</h2>
+  <div class="card">
+    <p>Con solo 26 chunks reales la latencia es trivial, así que se midió una tabla temporal de
+    <strong>20.000 vectores de 96 dimensiones</strong>
+    (HNSW m=8 ef_construction=32), 50 consultas Top-5 aleatorias.</p>
+    <table>
+      <thead><tr><th>Estrategia</th><th>Media</th><th>Máx</th></tr></thead>
+      <tbody>
+        <tr><td>Índice HNSW</td><td>0.55 ms</td><td>6.53 ms</td></tr>
+        <tr><td>Barrido secuencial (sin índice)</td><td>1.99 ms</td><td>6.37 ms</td></tr>
+      </tbody>
+    </table>
+    <p class="meta">Índice 11 MB · tabla 8.2 MB. Tabla temporal con vectores aleatorios; eliminada tras la medición.
+    El máximo incluye picos de arranque en frío; es una referencia de escala, no una prueba de estrés.</p>
+  </div>
+
+  <h2>4. Calidad del RAG (RAGAS local, Top-K = 5)</h2>
+  <table>
+    <thead><tr><th>Caso</th><th>Faithfulness</th><th>Context precision</th><th>Context recall</th><th>Answer relevancy</th><th>RAGAS</th></tr></thead>
+    <tbody><tr>
+      <td>enel-energia</td>
+      <td>1</td>
+      <td>0.4</td>
+      <td>1</td>
+      <td>0.3326</td>
+      <td><strong>0.6832</strong></td>
+    </tr><tr>
+      <td>aguas-nit</td>
+      <td>1</td>
+      <td>1</td>
+      <td>1</td>
+      <td>0.3849</td>
+      <td><strong>0.8462</strong></td>
+    </tr><tr>
+      <td>papeleria</td>
+      <td>1</td>
+      <td>0.4</td>
+      <td>1</td>
+      <td>0.4376</td>
+      <td><strong>0.7094</strong></td>
+    </tr><tr>
+      <td>claro-plan</td>
+      <td>1</td>
+      <td>0.4</td>
+      <td>1</td>
+      <td>0.2398</td>
+      <td><strong>0.6599</strong></td>
+    </tr><tr>
+      <td>sin-evidencia</td>
+      <td>1</td>
+      <td>0</td>
+      <td>1</td>
+      <td>0.1706</td>
+      <td><strong>0.5426</strong></td>
+    </tr>
+      <tr><td><strong>Promedio</strong></td><td>1</td><td>0.44</td>
+        <td>1</td><td>0.3131</td><td><strong>0.6883</strong></td></tr>
+    </tbody>
+  </table>
+  <div class="card warn">
+    <strong>Lectura honesta:</strong> la fidelidad (1.0) y el recall (1.0) son altos: las respuestas se apoyan en
+    fragmentos recuperados y la evidencia correcta casi siempre entra en el Top-5. La <em>context precision</em> (0.44) y la
+    <em>answer relevancy</em> (0.31) son los puntos débiles: el Top-5 trae fragmentos de relleno y el generador local
+    (sin Bedrock) devuelve la línea más cercana, no siempre el monto pedido. Es el siguiente frente de mejora.
+  </div>
+
+  <h2>5. Pruebas unitarias</h2>
+  <table>
+    <thead><tr><th>Área</th><th>Casos</th><th>Estado</th></tr></thead>
+    <tbody><tr><td>ocr y extraccion</td><td>14</td><td><span class="badge ok">PASS</span></td></tr><tr><td>documento y citas</td><td>2</td><td><span class="badge ok">PASS</span></td></tr><tr><td>vectorStore</td><td>3</td><td><span class="badge ok">PASS</span></td></tr><tr><td>busqueda hibrida</td><td>2</td><td><span class="badge ok">PASS</span></td></tr><tr><td>rag</td><td>3</td><td><span class="badge ok">PASS</span></td></tr>
+      <tr><td><strong>Total</strong></td><td><strong>24</strong></td><td><span class="badge ok">0 fallos</span></td></tr>
+    </tbody>
+  </table>
+
+  <h2>6. Build y recursos</h2>
+  <table>
+    <thead><tr><th>Métrica</th><th>Valor</th></tr></thead>
+    <tbody>
+      <tr><td>Build frontend (vite 5.4.21, 55 módulos)</td><td>463 ms</td></tr>
+      <tr><td>Bundle JS</td><td>208.07 kB (64.98 kB gzip)</td></tr>
+      <tr><td>Bundle CSS</td><td>15.19 kB (3.98 kB gzip)</td></tr>
+    </tbody>
+  </table>
+  <br />
+  <table>
+    <thead><tr><th>Contenedor (en reposo tras la carga)</th><th>CPU</th><th>Memoria</th></tr></thead>
+    <tbody><tr><td>backend</td><td>0.00%</td><td>142.8 MiB</td></tr><tr><td>postgres (pgvector)</td><td>0.43%</td><td>78.5 MiB</td></tr><tr><td>frontend (vite dev)</td><td>0.10%</td><td>158.2 MiB</td></tr><tr><td>pgadmin</td><td>0.03%</td><td>241 MiB</td></tr></tbody>
+  </table>
+
+  <h2>7. Alcance y limitaciones</h2>
+  <div class="card warn">
+    <ul>
+      <li>Mediciones <strong>locales</strong> (localhost, Docker Desktop, un solo usuario). Sirven para demostrar el estado funcional y el cumplimiento del SLA de 4 s; no son una prueba de capacidad en producción.</li>
+      <li>Dataset pequeño: 14 facturas y 26 chunks. La prueba de escala usa vectores sintéticos y no mide calidad semántica.</li>
+      <li>El generador RAG es <strong>local</strong> (<code>grounded-top1/top3</code>); sin claves AWS no se midió Bedrock, cuya latencia sería de segundos.</li>
+      <li>La imagen de OCR es un render limpio del PDF de muestra, no un escaneo ruidoso; en documentos reales Tesseract tarda más y baja la confianza.</li>
+      <li>Document AI / Textract no se midieron: no hay credenciales configuradas (el flujo omite ese ramal sin fallar).</li>
+      <li>No hay pruebas automatizadas de frontend ni E2E; solo build y verificación manual de UI.</li>
+    </ul>
+  </div>
+
+  <h2>8. Cómo reproducir</h2>
+  <pre>docker compose up -d
+npm test --workspace backend
+docker exec smartbills-backend sh -c 'cd /app/apps/backend &amp;&amp; node scripts/ragas-eval.mjs'
+BENCH_IMAGE=/ruta/factura.png npm run perf --workspace backend
+npm run report:metrics --workspace backend</pre>
+  <p class="meta">Datos crudos: <code>docs/sprint-4/evidencia/*.json</code></p>
+</main>
+</body>
+</html>

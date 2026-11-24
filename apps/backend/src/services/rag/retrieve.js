@@ -1,8 +1,79 @@
 import { prisma } from "../../config/prisma.js";
-import { embedText } from "../../utils/embeddings.js";
+import { tokenize } from "../../utils/embeddings.js";
+import { embedQuery, isEmbeddingUnavailable } from "../../utils/titanEmbeddings.js";
 import { buildInvoiceWhere, parseSearchFilters } from "../invoiceSearchService.js";
 import { hybridScore, lexicalOverlap, searchSimilarChunks } from "../vectorStore.js";
 import { MIN_RETRIEVAL_SCORE, RAG_TOP_K } from "./constants.js";
+
+const GENERIC_FOCUS = new Set([
+  "energia",
+  "electrica",
+  "servicio",
+  "servicios",
+  "residencial",
+  "comercial",
+  "total",
+  "gasto",
+  "mayor",
+  "plan",
+  "telefonia",
+  "internet",
+  "fibra",
+  "factura",
+  "facturas",
+  "utiles",
+  "oficina",
+  "consumo",
+  "kwh",
+  "luz",
+  "acueducto",
+  "alcantarillado",
+  "canon",
+  "arriendo",
+  "local",
+  "suscripcion",
+  "software",
+  "licencias",
+  "galones",
+  "gasolina",
+  "combustible",
+  "flota",
+  "nit",
+  "pagina",
+  "cuanto",
+  "pague",
+  "cual",
+  "hay",
+  "alguna",
+  "tengo",
+  "dice",
+  "sobre",
+  "pedido"
+]);
+
+export function focusTerms(question) {
+  return tokenize(question, { dropStopwords: true }).filter(
+    (token) => token.length >= 4 && !GENERIC_FOCUS.has(token)
+  );
+}
+
+function hitHaystack(hit) {
+  return `${hit.invoiceCode || ""} ${hit.supplier || ""} ${hit.text || ""} ${hit.invoice?.code || ""} ${hit.invoice?.supplier || ""}`;
+}
+
+export function focusHits(question, hits = []) {
+  const terms = focusTerms(question);
+  if (!terms.length || !hits.length) {
+    return hits;
+  }
+
+  const matched = hits.filter((hit) => {
+    const hay = tokenize(hitHaystack(hit), { dropStopwords: false }).join(" ");
+    return terms.some((term) => hay.includes(term));
+  });
+
+  return matched;
+}
 
 export function rankHits(question, candidates, limit = RAG_TOP_K) {
   const ranked = candidates
@@ -23,44 +94,58 @@ export function rankHits(question, candidates, limit = RAG_TOP_K) {
       };
     })
     .sort((left, right) => right.score - left.score)
-    .slice(0, limit);
+    .slice(0, Math.max(limit * 2, 6));
 
-  if (!ranked.length || ranked[0].score < MIN_RETRIEVAL_SCORE) {
+  const focused = focusHits(question, ranked).slice(0, limit);
+
+  if (!focused.length || focused[0].score < MIN_RETRIEVAL_SCORE) {
     return [];
   }
 
-  return ranked;
+  return focused;
 }
 
-export async function retrieveInvoiceHits({ question, invoiceId = null, filters = {}, limit = RAG_TOP_K }) {
+export async function retrieveInvoiceHits({
+  question,
+  invoiceId = null,
+  filters = {},
+  user = null,
+  limit = RAG_TOP_K
+}) {
   const parsed = parseSearchFilters({ ...filters, q: question });
-  const where = buildInvoiceWhere(parsed);
-  const hasSqlFilter = Boolean(
-    parsed.supplier || parsed.status || parsed.from || parsed.to || parsed.minTotal != null || parsed.maxTotal != null
-  );
+  const where = {
+    ...buildInvoiceWhere(parsed, user),
+    ...(invoiceId ? { id: invoiceId } : {})
+  };
 
-  let invoiceIds = null;
-  if (invoiceId) {
-    invoiceIds = [invoiceId];
-  } else if (hasSqlFilter) {
-    const scoped = await prisma.invoice.findMany({
-      where,
-      select: { id: true }
-    });
-    invoiceIds = scoped.map((invoice) => invoice.id);
-    if (!invoiceIds.length) {
-      return { candidates: [], hits: [] };
-    }
+  const scoped = await prisma.invoice.findMany({
+    where,
+    select: { id: true }
+  });
+  const invoiceIds = scoped.map((invoice) => invoice.id);
+  if (!invoiceIds.length) {
+    return { candidates: [], hits: [] };
   }
 
-  const candidates = await searchSimilarChunks({
-    embedding: embedText(question),
-    invoiceIds,
-    limit: Math.max(limit * 4, 12)
-  });
+  try {
+    const query = await embedQuery(question);
+    const candidates = await searchSimilarChunks({
+      embedding: query.embedding,
+      embeddingModel: query.embeddingModel,
+      embeddingDim: query.embeddingDim,
+      invoiceIds,
+      limit: Math.max(limit * 4, 12)
+    });
 
-  return {
-    candidates,
-    hits: rankHits(question, candidates, limit)
-  };
+    return {
+      candidates,
+      hits: rankHits(question, candidates, limit)
+    };
+  } catch (error) {
+    if (!isEmbeddingUnavailable(error)) {
+      throw error;
+    }
+
+    return { candidates: [], hits: [] };
+  }
 }

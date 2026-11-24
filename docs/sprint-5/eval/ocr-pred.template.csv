@@ -1,0 +1,3 @@
+file_name,supplier_pred,nit_pred,issue_date_pred,due_date_pred,subtotal_pred,vat_pred,total_pred,invoice_number_pred,ocr_engine,status
+enel-abril-2026.pdf,Enel Colombia S.A. E.S.P.,860.063.875-8,2026-04-01,,320000.00,60800.00,380800.00,1234567,pdftotext,PROCESSED
+claro-escaneo.jpg,Proveedor no identificado,No detectado,2026-03-28,,0.00,0.00,0.00,,tesseract,PROCESSED

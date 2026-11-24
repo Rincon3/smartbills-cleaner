@@ -5,9 +5,9 @@ import { EMBEDDING_MODEL, VECTOR_SIZE, tokenize } from "../utils/embeddings.js";
 
 const SEARCH_CANDIDATES = 16;
 
-export function toVectorLiteral(values) {
-  if (!Array.isArray(values) || values.length !== VECTOR_SIZE) {
-    throw new Error(`El embedding debe tener ${VECTOR_SIZE} dimensiones`);
+export function toVectorLiteral(values, expectedSize = VECTOR_SIZE) {
+  if (!Array.isArray(values) || values.length !== expectedSize) {
+    throw new Error(`El embedding debe tener ${expectedSize} dimensiones`);
   }
 
   return `[${values.map((value) => Number(value || 0).toFixed(6)).join(",")}]`;
@@ -35,7 +35,7 @@ export async function replaceInvoiceChunks(invoiceId, chunks) {
 
   for (const chunk of chunks) {
     const id = `chk_${randomUUID().replace(/-/g, "").slice(0, 24)}`;
-    const vector = toVectorLiteral(chunk.embedding);
+    const vector = toVectorLiteral(chunk.embedding, chunk.embeddingDim || VECTOR_SIZE);
 
     await prisma.$executeRaw`
       INSERT INTO "InvoiceChunk" (
@@ -79,25 +79,35 @@ export async function replaceInvoiceChunks(invoiceId, chunks) {
   return created;
 }
 
-function chunkScopeSql({ invoiceId = null, invoiceIds = null } = {}) {
+function chunkScopeSql({
+  invoiceId = null,
+  invoiceIds = null,
+  embeddingModel = EMBEDDING_MODEL,
+  embeddingDim = VECTOR_SIZE
+} = {}) {
+  const clauses = [
+    Prisma.sql`c."embeddingDim" = ${embeddingDim}`,
+    Prisma.sql`c."embeddingModel" = ${embeddingModel}`
+  ];
+
   if (invoiceId) {
-    return Prisma.sql`WHERE c."invoiceId" = ${invoiceId}`;
+    clauses.push(Prisma.sql`c."invoiceId" = ${invoiceId}`);
+  } else if (invoiceIds?.length) {
+    clauses.push(Prisma.sql`c."invoiceId" IN (${Prisma.join(invoiceIds.map((id) => Prisma.sql`${id}`))})`);
   }
 
-  if (invoiceIds?.length) {
-    return Prisma.sql`WHERE c."invoiceId" IN (${Prisma.join(invoiceIds.map((id) => Prisma.sql`${id}`))})`;
-  }
-
-  return Prisma.empty;
+  return Prisma.sql`WHERE ${Prisma.join(clauses, " AND ")}`;
 }
 
 export async function searchSimilarChunks({
   embedding,
   invoiceId = null,
   invoiceIds = null,
-  limit = SEARCH_CANDIDATES
+  limit = SEARCH_CANDIDATES,
+  embeddingModel = EMBEDDING_MODEL,
+  embeddingDim = VECTOR_SIZE
 }) {
-  const vector = toVectorLiteral(embedding);
+  const vector = toVectorLiteral(embedding, embeddingDim);
   const take = Math.max(1, Math.min(Number(limit) || SEARCH_CANDIDATES, 64));
 
   return prisma.$queryRaw`
@@ -116,7 +126,7 @@ export async function searchSimilarChunks({
       (1 - (c.embedding <=> ${vector}::vector))::double precision AS semantic
     FROM "InvoiceChunk" c
     INNER JOIN "Invoice" i ON i.id = c."invoiceId"
-    ${chunkScopeSql({ invoiceId, invoiceIds })}
+    ${chunkScopeSql({ invoiceId, invoiceIds, embeddingModel, embeddingDim })}
     ORDER BY c.embedding <=> ${vector}::vector
     LIMIT ${take}
   `;

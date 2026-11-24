@@ -1,0 +1,62 @@
+Issue ID,Issue Type,Summary,Description,Story Points,Priority,Sprint,Labels,Labels,Labels,Labels
+301,Story,[DOC-02] Paquete de evidencia Scrum del Sprint 6,"Como tesista, quiero registrar velocidad, burndown, review y retro del S6.
+
+Copiar docs/sprint-5/eval/sprint-evidence.template.md a docs/sprint-6/evidencia-sprint.md el dia 1. Incluir matriz de US-08 (y US-05/CSV si entran).
+
+Criterios de aceptacion
+- Exito: el archivo de evidencia tiene velocidad, burndown, retro y matriz US-08 al cierre.
+- Error: si Jira no tiene burndown, la tabla semanal de la plantilla esta llena.",1,Highest,S6,ti3,doc-02,seccion-5,nucleo
+302,Story,[DOC-03] Paquete de evidencia Scrum del Sprint 7,"Como tesista, quiero registrar velocidad, burndown, review y retro del S7, con matriz de TK-04 (HTTPS, secretos, persistencia) y US-02 si entra.
+
+Criterios de aceptacion
+- Exito: el archivo de evidencia incluye checklist de publicacion (URL o Plan B) y no finge un despliegue Educate destruido.
+- Error: si no hay URL, se declara ambiente local; no se etiqueta como produccion AWS.",1,Highest,S7,ti3,doc-03,seccion-5,nucleo
+303,Story,[DOC-04] Paquete de evidencia Scrum del Sprint 8,"Como tesista, quiero cerrar el paquete de evidencia del sprint corto de cierre. Velocidad = SP de documentacion Done.
+
+Criterios de aceptacion
+- Exito: existe docs/sprint-8/evidencia-sprint.md con compromiso y cierre.",1,Highest,S8,ti3,doc-04,seccion-5,nucleo
+304,Story,"[DOC-05] Secciones 1 y 2: ficha, contexto y objetivos","Ficha: nombre SmartBills Cleaner, equipo de 1, roles (PO+Dev=estudiante, SM=tutor, asesor), duracion S1-S8. Contexto, justificacion de IA (servicios preentrenados) y objetivos alineados al anteproyecto.
+
+Se puede redactar ya. No esta en los 13 comprometidos del S5.
+
+Criterios de aceptacion
+- Exito: objetivos coinciden con el anteproyecto y se declara el stack real (Node/React/Prisma).
+- Error: si Excel y v2 se contradicen, se cita el Excel y no se mezclan IDs.",2,Medium,S5,ti3,doc-05,seccion-1,extra
+305,Story,"[DOC-06] Seccion 3: arquitectura, UI e integracion IA","Borrador ahora con la auditoria (no consume los 13 del S5). El diagrama de despliegue se congela en DOC-10. Seguridad honesta: /uploads publico hasta US-08; JWT 12h.
+
+Criterios de aceptacion
+- Exito: hay componentes, stack, OCR+Titan+RAG y un parrafo de seguridad honesto.
+- Error: si TK-04 no esta, el recuadro de despliegue dice pendiente DOC-10; si no hay Figma, se usan capturas reales.",2,Medium,,ti3,doc-06,seccion-3,extra
+306,Story,"[DOC-07] Seccion 4: servicios IA, evaluacion y etica","No finge entrenamiento ni validacion cruzada. Protocolo: gold OCR, 16 consultas hash vs Titan, RAGAS antes/despues, faithfulness por construccion, PII/sesgo.
+
+Depende de US-04, eval OCR y TK-03. Pregunta al asesor en docs/sprint-5/fase-b-documentacion-ti3.md.
+
+Criterios de aceptacion
+- Exito: se reportan las cifras medidas en S5 (precision, ranking, delta RAGAS) y el parrafo de servicios preentrenados.
+- Error: si el asesor no valida el protocolo, el capitulo queda pendiente de validacion; no se inventa un k-fold ni se vende faithfulness 1.0 como calidad del modelo.
+
+Meta, no criterio de aceptacion: umbral RAGAS 0.85 o precision OCR 90 %.",3,Highest,S8,ti3,doc-07,seccion-4,nucleo
+307,Story,[DOC-08] Seccion 5: Scrum compilado,"Una tabla de velocidades S1-S8. S1-S4: export Jira o no registrado. Compila DOC-01 a DOC-04. Extra (cae 5).
+
+Criterios de aceptacion
+- Exito: la seccion 5 tiene velocidad por sprint (o no registrado en S1-S4) y al menos un burndown.
+- Error: no se inventan SP de sprints sin datos.",2,Highest,S8,ti3,doc-08,seccion-5,extra
+308,Story,[DOC-09] Seccion 6: pruebas y matriz requisito-prueba,"Plan: unitarias, eval OCR, RAGAS, perf S4. Matriz ID Excel a prueba. Sin Istanbul. Extra (cae 6).
+
+Criterios de aceptacion
+- Exito: cada US/TK Done tiene al menos una prueba o captura en la matriz.
+- Error: no se copia una captura de tests si las unitarias actuales fallan; entrevistas no aplicadas se marcan no aplica.",1,Medium,S8,ti3,doc-09,seccion-6,extra
+309,Story,[DOC-10] Seccion 7: despliegue y manuales,"Ambientes, install Compose, manual de usuario, manual tecnico corto, capturas. Depende de TK-04. Prohibido usar facturas reales en capturas si US-08 no esta Done.
+
+Criterios de aceptacion
+- Exito: hay pasos de instalacion y capturas del sistema publicado o local (etiquetado como local).
+- Error: si no hay URL, el ambiente se declara Docker local; no se suben PDF reales si /uploads sigue publico.",3,Highest,S8,ti3,doc-10,seccion-7,nucleo
+310,Story,[DOC-11] Seccion 8: lecciones y desvios,"Dificultades Educate, desvios R2, US-11, aprendizajes. Extra (cae 7).
+
+Criterios de aceptacion
+- Exito: cada desvio de plan-vigente-s5-s8.md tiene impacto y estado (validado o pendiente del director).",1,Medium,S8,ti3,doc-11,seccion-8,extra
+311,Story,[DOC-12] Seccion 9 y PDF unico,"Repo, dataset gold anonimizado, biblio, licencia, PDF TI3 unificado.
+
+Criterios de aceptacion
+- Exito: existe un PDF con las 9 secciones y el enlace del repo.
+- Error: el anexo gold no lleva NIT reales; si no hay LICENSE se declara uso academico.",2,Highest,S8,ti3,doc-12,seccion-9,nucleo

@@ -55,6 +55,7 @@ export class InvoiceChunkRetriever extends BaseRetriever {
     this.k = Number(fields.k || RAG_TOP_K);
     this.invoiceId = fields.invoiceId || null;
     this.filters = fields.filters || {};
+    this.user = fields.user || null;
   }
 
   async _getRelevantDocuments(query) {
@@ -62,6 +63,7 @@ export class InvoiceChunkRetriever extends BaseRetriever {
       question: query,
       invoiceId: this.invoiceId,
       filters: this.filters,
+      user: this.user,
       limit: this.k
     });
     return hits.map(hitToDocument);

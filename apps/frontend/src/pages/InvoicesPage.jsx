@@ -3,6 +3,8 @@ import { api } from "../api/client";
 import { AdvancedSearchForm, emptyFilters } from "../components/AdvancedSearchForm";
 import { Icon } from "../components/Icon";
 import { InvoiceEditor } from "../components/InvoiceEditor";
+import { useAuth } from "../context/AuthContext";
+import { canMutateInvoices } from "../utils/access";
 
 function formatCurrency(value) {
   return new Intl.NumberFormat("es-CO", {
@@ -13,6 +15,8 @@ function formatCurrency(value) {
 }
 
 export function InvoicesPage() {
+  const { user } = useAuth();
+  const canMutate = canMutateInvoices(user);
   const [filters, setFilters] = useState(emptyFilters);
   const [invoices, setInvoices] = useState([]);
   const [meta, setMeta] = useState({ elapsedMs: null, mode: "sql", withinSla: true });
@@ -20,6 +24,7 @@ export function InvoicesPage() {
   const [error, setError] = useState("");
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null);
+  const [exporting, setExporting] = useState(false);
 
   const loadInvoices = async (nextFilters = filters) => {
     setLoading(true);
@@ -66,6 +71,26 @@ export function InvoicesPage() {
     await loadInvoices();
   };
 
+  const handleExportCsv = async () => {
+    setExporting(true);
+    setError("");
+    try {
+      const blob = await api.exportInvoicesCsv();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "facturas.csv";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (exportError) {
+      setError(exportError.message);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <section className="page">
       <div className="page-header compact">
@@ -77,7 +102,11 @@ export function InvoicesPage() {
             texto.
           </p>
         </div>
-        <div className="stats-inline">
+        <div className="page-actions">
+          <button className="ghost-button" type="button" onClick={handleExportCsv} disabled={exporting}>
+            {exporting ? "Exportando..." : "Exportar CSV"}
+          </button>
+          <div className="stats-inline">
           <div>
             <span>Resultados</span>
             <strong>{totals.total}</strong>
@@ -92,6 +121,7 @@ export function InvoicesPage() {
               {meta.elapsedMs == null ? "—" : `${meta.elapsedMs} ms`}
               {meta.withinSla === false ? " · >4s" : ""}
             </strong>
+          </div>
           </div>
         </div>
       </div>
@@ -115,7 +145,13 @@ export function InvoicesPage() {
           <div>
             <h3>Resultados</h3>
             <p>
-              Orden {meta.mode === "sql+pgvector" ? "semántico (pgvector)" : "por fecha"} · modo {meta.mode}
+              Orden{" "}
+              {meta.mode === "sql+pgvector"
+                ? "semántico (pgvector)"
+                : meta.mode === "degraded"
+                  ? "léxico (Bedrock no disponible)"
+                  : "por fecha"}{" "}
+              · modo {meta.mode}
             </p>
           </div>
         </div>
@@ -168,9 +204,11 @@ export function InvoicesPage() {
                     >
                       Ver
                     </button>
-                    <button className="ghost-button danger" type="button" onClick={() => setPendingDelete(invoice)}>
-                      Eliminar
-                    </button>
+                    {canMutate ? (
+                      <button className="ghost-button danger" type="button" onClick={() => setPendingDelete(invoice)}>
+                        Eliminar
+                      </button>
+                    ) : null}
                     <Icon name="more" className="more-icon" />
                   </td>
                 </tr>
@@ -183,6 +221,7 @@ export function InvoicesPage() {
       {selectedInvoice ? (
         <InvoiceEditor
           invoice={selectedInvoice}
+          readOnly={!canMutate}
           onClose={() => setSelectedInvoice(null)}
           onSave={handleSave}
         />

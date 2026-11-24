@@ -1,7 +1,6 @@
 import express from "express";
 import cors from "cors";
-import { env } from "./config/env.js";
-import { uploadsDir } from "./utils/paths.js";
+import { assertProductionSecrets, env } from "./config/env.js";
 import { authMiddleware, requireRole } from "./middleware/auth.js";
 import { authRouter } from "./routes/authRoutes.js";
 import { dashboardRouter } from "./routes/dashboardRoutes.js";
@@ -21,7 +20,6 @@ app.use(
   })
 );
 app.use(express.json());
-app.use("/uploads", express.static(uploadsDir));
 
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok" });
@@ -48,6 +46,7 @@ app.use((error, _req, res, _next) => {
 });
 
 async function bootstrap() {
+  assertProductionSecrets();
   await seedDatabase();
   await ensureInvoiceChunksIndexed();
 

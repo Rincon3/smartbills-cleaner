@@ -95,8 +95,8 @@ model InvoiceChunk {
   text           String
   chunkSource    String
   embedding      Unsupported("vector")
-  embeddingModel String                     @default("hashed-bow-96-v2")
-  embeddingDim   Int                        @default(96)
+  embeddingModel String                     @default("amazon.titan-embed-text-v2:0")
+  embeddingDim   Int                        @default(1024)
   createdAt      DateTime                   @default(now())
   invoice        Invoice                    @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 

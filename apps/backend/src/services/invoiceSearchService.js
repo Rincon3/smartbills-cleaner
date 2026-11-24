@@ -1,6 +1,7 @@
 import { prisma } from "../config/prisma.js";
-import { embedText } from "../utils/embeddings.js";
-import { searchSimilarChunks } from "./vectorStore.js";
+import { embedQuery, isEmbeddingUnavailable } from "../utils/titanEmbeddings.js";
+import { invoiceWhereFor } from "./access.js";
+import { lexicalOverlap, searchSimilarChunks } from "./vectorStore.js";
 
 function optionalNumber(value) {
   if (value === undefined || value === null || value === "") {
@@ -40,8 +41,9 @@ export function parseSearchFilters(input = {}) {
   };
 }
 
-export function buildInvoiceWhere(filters) {
+export function buildInvoiceWhere(filters, user) {
   return {
+    ...invoiceWhereFor(user),
     ...(filters.status ? { status: filters.status } : {}),
     ...(filters.supplier
       ? {
@@ -102,10 +104,10 @@ export function collapseChunksToInvoices(invoices, chunks) {
   return [...byId.values()].sort((left, right) => Number(right.score || 0) - Number(left.score || 0));
 }
 
-export async function searchInvoicesHybrid(rawFilters = {}) {
+export async function searchInvoicesHybrid(rawFilters = {}, user = null) {
   const started = Date.now();
   const filters = parseSearchFilters(rawFilters);
-  const where = buildInvoiceWhere(filters);
+  const where = buildInvoiceWhere(filters, user);
 
   const invoices = await prisma.invoice.findMany({
     where,
@@ -131,16 +133,43 @@ export async function searchInvoicesHybrid(rawFilters = {}) {
     };
   }
 
-  const chunks = await searchSimilarChunks({
-    embedding: embedText(filters.q),
-    invoiceIds: invoices.map((invoice) => invoice.id),
-    limit: Math.min(64, Math.max(16, invoices.length * 3))
-  });
+  try {
+    const query = await embedQuery(filters.q);
+    const chunks = await searchSimilarChunks({
+      embedding: query.embedding,
+      embeddingModel: query.embeddingModel,
+      embeddingDim: query.embeddingDim,
+      invoiceIds: invoices.map((invoice) => invoice.id),
+      limit: Math.min(64, Math.max(16, invoices.length * 3))
+    });
 
-  return {
-    invoices: collapseChunksToInvoices(invoices, chunks),
-    elapsedMs: Date.now() - started,
-    mode: "sql+pgvector",
-    filters
-  };
+    return {
+      invoices: collapseChunksToInvoices(invoices, chunks),
+      elapsedMs: Date.now() - started,
+      mode: "sql+pgvector",
+      filters
+    };
+  } catch (error) {
+    if (!isEmbeddingUnavailable(error)) {
+      throw error;
+    }
+
+    console.error("Búsqueda en modo degraded; Bedrock embeddings no disponibles.", error.message);
+
+    const ranked = invoices
+      .map((invoice) => ({
+        ...invoice,
+        score: Number(
+          lexicalOverlap(filters.q, `${invoice.code} ${invoice.supplier} ${invoice.ocrRawText || ""}`).toFixed(4)
+        )
+      }))
+      .sort((left, right) => Number(right.score || 0) - Number(left.score || 0));
+
+    return {
+      invoices: ranked,
+      elapsedMs: Date.now() - started,
+      mode: "degraded",
+      filters
+    };
+  }
 }

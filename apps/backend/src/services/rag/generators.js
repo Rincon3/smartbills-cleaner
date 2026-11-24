@@ -1,11 +1,15 @@
 import { DEFAULT_ADJUSTED_MODEL, DEFAULT_BASE_MODEL } from "./constants.js";
 import { generateGroundedAnswer } from "./citations.js";
 
-export function bedrockEnabled() {
+export function bedrockEnabled(processEnv = process.env) {
   return Boolean(
-    process.env.AWS_ACCESS_KEY_ID ||
-      process.env.BEDROCK_AWS_ACCESS_KEY_ID ||
-      process.env.AWS_BEARER_TOKEN_BEDROCK
+    processEnv.AWS_ACCESS_KEY_ID ||
+      processEnv.BEDROCK_AWS_ACCESS_KEY_ID ||
+      processEnv.AWS_BEARER_TOKEN_BEDROCK ||
+      processEnv.AWS_PROFILE ||
+      processEnv.AWS_CONTAINER_CREDENTIALS_RELATIVE_URI ||
+      processEnv.AWS_CONTAINER_CREDENTIALS_FULL_URI ||
+      processEnv.BEDROCK_USE_INSTANCE_PROFILE === "true"
   );
 }
 
@@ -36,7 +40,7 @@ export async function invokeBedrock({ prompt, model, role }) {
   const { ChatBedrockConverse } = await import("@langchain/aws");
   const llm = new ChatBedrockConverse({
     model,
-    region: process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || "us-east-1",
+    region: process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || "us-east-2",
     temperature: role === "base" ? 0 : 0.1,
     maxTokens: role === "base" ? 220 : 360
   });

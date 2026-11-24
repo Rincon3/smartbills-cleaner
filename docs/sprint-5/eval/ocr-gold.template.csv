@@ -1,0 +1,3 @@
+file_name,source_type,supplier_gold,nit_gold,issue_date_gold,due_date_gold,subtotal_gold,vat_gold,total_gold,invoice_number_gold,notes
+enel-abril-2026.pdf,nativo,Enel Colombia S.A. E.S.P.,8600638758,2026-04-01,2026-04-15,320000.00,60800.00,380800.00,1234567,EJEMPLO — borrar esta fila. NIT sin puntos ni guion. Fechas ISO. Montos con punto decimal.
+claro-escaneo.jpg,escaneado,Comunicacion Celular S.A. Claro,8001539937,2026-03-28,2026-04-15,89000.00,16910.00,105910.00,1099281,EJEMPLO — borrar. source_type = nativo | escaneado | foto

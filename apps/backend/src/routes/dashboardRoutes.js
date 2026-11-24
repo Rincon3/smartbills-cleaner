@@ -1,10 +1,12 @@
 import { Router } from "express";
 import { prisma } from "../config/prisma.js";
+import { invoiceWhereFor } from "../services/access.js";
 
 export const dashboardRouter = Router();
 
-dashboardRouter.get("/summary", async (_req, res) => {
+dashboardRouter.get("/summary", async (req, res) => {
   const invoices = await prisma.invoice.findMany({
+    where: invoiceWhereFor(req.user),
     orderBy: { uploadedAt: "desc" },
     include: { owner: true }
   });

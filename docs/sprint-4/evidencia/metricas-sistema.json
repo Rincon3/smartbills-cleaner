@@ -1,0 +1,68 @@
+{
+  "generatedAt": "2026-10-15T18:02:31.216Z",
+  "tests": {
+    "runner": "node:test",
+    "total": 24,
+    "pass": 24,
+    "fail": 0,
+    "durationMs": 672,
+    "byArea": {
+      "ocr_y_extraccion": 14,
+      "documento_y_citas": 2,
+      "vectorStore": 3,
+      "busqueda_hibrida": 2,
+      "rag": 3
+    }
+  },
+  "frontendBuild": {
+    "tool": "vite 5.4.21",
+    "modules": 55,
+    "buildMs": 463,
+    "jsKB": 208.07,
+    "jsGzipKB": 64.98,
+    "cssKB": 15.19,
+    "cssGzipKB": 3.98
+  },
+  "containers": [
+    {
+      "name": "backend",
+      "cpu": "0.00%",
+      "mem": "142.8 MiB"
+    },
+    {
+      "name": "postgres (pgvector)",
+      "cpu": "0.43%",
+      "mem": "78.5 MiB"
+    },
+    {
+      "name": "frontend (vite dev)",
+      "cpu": "0.10%",
+      "mem": "158.2 MiB"
+    },
+    {
+      "name": "pgadmin",
+      "cpu": "0.03%",
+      "mem": "241 MiB"
+    }
+  ],
+  "data": {
+    "invoices": 14,
+    "chunks": 26,
+    "pgvectorExtension": true,
+    "embeddingModel": "hashed-bow-96-v2",
+    "dim": 96
+  },
+  "vectorScale": {
+    "rows": 20000,
+    "dim": 96,
+    "index": "HNSW m=8 ef_construction=32",
+    "hnswMeanMs": 0.55,
+    "hnswMaxMs": 6.53,
+    "seqMeanMs": 1.99,
+    "seqMaxMs": 6.37,
+    "queries": 50,
+    "indexSize": "11 MB",
+    "tableSize": "8.2 MB",
+    "note": "Tabla temporal con vectores aleatorios; eliminada tras la medición."
+  }
+}

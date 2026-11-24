@@ -1,18 +1,24 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  azureDocumentIntelligenceConfigured,
   cloudOcrOrder,
+  docIntelConfigured,
   documentAiConfigured,
+  pagesFromAzure,
+  pagesFromDocIntel,
   pagesFromDocumentAi,
   pagesFromTextract,
   textractConfigured,
   tryCloudOcr
 } from "./cloudOcr.js";
 
-test("sin claves no activa Document AI ni Textract", () => {
+test("sin claves no activa DocIntel, Azure, Document AI ni Textract", () => {
+  assert.equal(docIntelConfigured(), false);
+  assert.equal(azureDocumentIntelligenceConfigured(), false);
   assert.equal(documentAiConfigured(), false);
   assert.equal(textractConfigured(), false);
-  assert.deepEqual(cloudOcrOrder(), ["documentai", "textract"]);
+  assert.deepEqual(cloudOcrOrder(), ["docintel", "azure", "documentai", "textract"]);
 });
 
 test("tryCloudOcr no lanza y sigue el flujo si no hay APIs", async () => {
@@ -43,4 +49,47 @@ test("arma páginas desde bloques de Textract", () => {
   });
   assert.equal(pages[0].engine, "textract");
   assert.match(pages[0].text, /380/);
+});
+
+test("arma páginas desde Azure Document Intelligence con NIT y total", () => {
+  const pages = pagesFromAzure({
+    analyzeResult: {
+      pages: [{ pageNumber: 1, lines: [{ content: "Factura de servicios" }] }],
+      documents: [
+        {
+          fields: {
+            VendorName: { content: "Enel Colombia" },
+            VendorTaxId: { content: "860063875-6" },
+            InvoiceTotal: { content: "380.800", valueCurrency: { amount: 380800 } }
+          }
+        }
+      ]
+    }
+  });
+  assert.equal(pages[0].engine, "azure-document-intelligence");
+  assert.match(pages[0].text, /NIT: 860063875-6/);
+  assert.match(pages[0].text, /Total: 380.800/);
+  assert.match(pages[0].text, /Enel Colombia/);
+  assert.match(pages[0].text, /Factura de servicios/);
+});
+
+test("Azure sin páginas usa el content plano", () => {
+  const pages = pagesFromAzure({
+    analyzeResult: { content: "NIT 900.123.456-7 Total 249.900" }
+  });
+  assert.equal(pages.length, 1);
+  assert.match(pages[0].text, /249.900/);
+});
+
+test("arma páginas desde Info Inlet / Knowlez invoice extract", () => {
+  const pages = pagesFromDocIntel({
+    vendor_name: "Enel Colombia",
+    tax_id: { value: "860063875-6", confidence: 0.99 },
+    total: "380.800",
+    pages: [{ page: 1, text: "Servicio de energia electrica" }]
+  });
+  assert.equal(pages[0].engine, "docintel-suite");
+  assert.match(pages[0].text, /NIT: 860063875-6/);
+  assert.match(pages[0].text, /Total: 380.800/);
+  assert.match(pages[0].text, /energia electrica/);
 });

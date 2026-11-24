@@ -999,9 +999,96 @@ th {
 }
 
 .consult-form,
-.consult-answer {
+.consult-answer,
+.consult-page {
   display: grid;
   gap: 16px;
+}
+
+.consult-thread {
+  display: grid;
+  gap: 12px;
+  max-height: min(58vh, 560px);
+  overflow: auto;
+  padding: 18px;
+  align-content: start;
+}
+
+.chat-bubble {
+  max-width: min(720px, 92%);
+  border-radius: 18px;
+  padding: 12px 16px;
+  display: grid;
+  gap: 8px;
+}
+
+.chat-bubble--user {
+  justify-self: end;
+  background: #10302c;
+  color: #e8f7f3;
+}
+
+.chat-bubble--assistant {
+  justify-self: start;
+  background: rgba(248, 250, 252, 0.94);
+  border: 1px solid var(--border);
+}
+
+.chat-role {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.chat-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.chat-latency {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.mode-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+}
+
+.mode-chip--analytics {
+  background: #e8f1ff;
+  color: #1d4ed8;
+}
+
+.mode-chip--none {
+  background: #fff4e5;
+  color: #9a6700;
+}
+
+.consult-composer {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.consult-composer textarea {
+  width: 100%;
+  min-height: 72px;
+  resize: vertical;
+  padding: 13px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(255, 255, 255, 0.92);
+  outline: none;
 }
 
 .consult-form textarea {
@@ -1115,7 +1202,8 @@ th {
   }
 
   .filter-bar,
-  .advanced-search-grid {
+  .advanced-search-grid,
+  .consult-composer {
     grid-template-columns: 1fr;
   }
 }

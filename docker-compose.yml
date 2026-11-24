@@ -37,14 +37,20 @@ services:
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
-      AWS_REGION: ${AWS_REGION:-us-east-1}
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
-      AWS_BEARER_TOKEN_BEDROCK: ${AWS_BEARER_TOKEN_BEDROCK:-}
+      AWS_REGION: ${AWS_REGION:-us-east-2}
+      AWS_SDK_LOAD_CONFIG: "1"
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-amazon.titan-embed-text-v2:0}
       BEDROCK_BASE_MODEL: ${BEDROCK_BASE_MODEL:-amazon.nova-lite-v1:0}
-      BEDROCK_ADJUSTED_MODEL: ${BEDROCK_ADJUSTED_MODEL:-amazon.nova-pro-v1:0}
-      RAG_TOP_K: ${RAG_TOP_K:-5}
-      OCR_CLOUD_ORDER: ${OCR_CLOUD_ORDER:-documentai,textract}
+      BEDROCK_ADJUSTED_MODEL: ${BEDROCK_ADJUSTED_MODEL:-amazon.nova-lite-v1:0}
+      RAG_TOP_K: ${RAG_TOP_K:-3}
+      MIN_RETRIEVAL_SCORE: ${MIN_RETRIEVAL_SCORE:-0.32}
+      OCR_CLOUD_ORDER: ${OCR_CLOUD_ORDER:-docintel,azure,documentai,textract}
+      DOCINTEL_API_KEY: ${DOCINTEL_API_KEY:-}
+      DOCINTEL_BASE_URL: ${DOCINTEL_BASE_URL:-https://api-doc-intel-suite.knowlez.com}
+      DOCINTEL_SUBSCRIPTION_ID: ${DOCINTEL_SUBSCRIPTION_ID:-}
+      AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT: ${AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT:-}
+      AZURE_DOCUMENT_INTELLIGENCE_KEY: ${AZURE_DOCUMENT_INTELLIGENCE_KEY:-}
+      AZURE_DOCUMENT_INTELLIGENCE_MODEL: ${AZURE_DOCUMENT_INTELLIGENCE_MODEL:-prebuilt-invoice}
       GOOGLE_CLOUD_PROJECT: ${GOOGLE_CLOUD_PROJECT:-}
       DOCUMENT_AI_LOCATION: ${DOCUMENT_AI_LOCATION:-us}
       DOCUMENT_AI_PROCESSOR_ID: ${DOCUMENT_AI_PROCESSOR_ID:-}
@@ -54,6 +60,7 @@ services:
     volumes:
       - ./apps/backend:/app/apps/backend
       - /app/apps/backend/node_modules
+      - ${HOME}/.aws:/root/.aws:ro
     depends_on:
       - postgres
     ports:
