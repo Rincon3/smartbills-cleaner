@@ -28,3 +28,4 @@ S3 está disponible (crear/subir/borrar, bucket de prueba eliminado). Textract n
 - US-04 usa Titan v2 dim 1024. RAG de texto: Nova Lite; si Invoke falla, extractivo local.
 - TK-04 implementa **solo** Plan A EC2 (Plan B solo si A se cae).
 - Inventario: `docs/sprint-5/aws-educate-inventario.md`.
+- Runbook y bloqueo IAM de publicación: `docs/sprint-5/tk-04-publicacion.md`.

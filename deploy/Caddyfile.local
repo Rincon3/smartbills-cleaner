@@ -1,0 +1,9 @@
+{
+	auto_https disable_redirects
+}
+
+{$PUBLIC_HOST:localhost} {
+	tls internal
+	encode gzip
+	reverse_proxy frontend:80
+}

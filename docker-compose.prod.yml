@@ -34,6 +34,7 @@ services:
       ALLOW_SEED: ${ALLOW_SEED:-false}
       AWS_REGION: ${AWS_REGION:-us-east-2}
       AWS_SDK_LOAD_CONFIG: "1"
+      BEDROCK_USE_INSTANCE_PROFILE: ${BEDROCK_USE_INSTANCE_PROFILE:-false}
       EMBEDDING_MODEL: ${EMBEDDING_MODEL:-amazon.titan-embed-text-v2:0}
       BEDROCK_BASE_MODEL: ${BEDROCK_BASE_MODEL:-amazon.nova-lite-v1:0}
       BEDROCK_ADJUSTED_MODEL: ${BEDROCK_ADJUSTED_MODEL:-amazon.nova-lite-v1:0}
